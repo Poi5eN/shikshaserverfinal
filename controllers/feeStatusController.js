@@ -135,20 +135,27 @@ exports.getFeeHistory = async (req, res) => {
             ...(admissionNumber ? { admissionNumber: admissionNumber } : {})
         };
 
-        const feeStatusData = await FeeStatus.find(filter, 'admissionNumber feeHistory').exec();
+        const feeStatusData = await FeeStatus.find(filter).exec();
 
         let feeHistory = [];
         for (const feeStatus of feeStatusData) {
-            const studentData = await NewStudentModel.findOne({ _id: feeStatus.admissionNumber }, 'fullName class admissionNumber').exec();
-            feeStatus.feeHistory.forEach(history => {
-                feeHistory.push({
-                    admissionNumber: studentData.admissionNumber,
-                    studentName: studentData.fullName,
-                    studentClass: studentData.class,
-                    feeReceiptNumber: history.feeReceiptNumber,
-                    ...history._doc
+            const studentData = await NewStudentModel.findOne({ admissionNumber: feeStatus.admissionNumber }, 'fullName class admissionNumber').exec();
+
+            // Check if studentData exists before using it
+            if (studentData) {
+                feeStatus.feeHistory.forEach(history => {
+                    feeHistory.push({
+                        admissionNumber: studentData.admissionNumber,
+                        studentName: studentData.fullName,
+                        studentClass: studentData.class,
+                        feeReceiptNumber: history.feeReceiptNumber,
+                        paymentMode: history.paymentMode,
+                        ...history._doc
+                    });
                 });
-            });
+            } else {
+                console.error(`Student with admissionNumber ${feeStatus.admissionNumber} not found`);
+            }
         }
 
         res.status(200).json({
@@ -164,7 +171,6 @@ exports.getFeeHistory = async (req, res) => {
         });
     }
 };
-
 
 // exports.createExam = async (req, res) => {
 //     try {
