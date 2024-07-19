@@ -27,7 +27,8 @@ exports.createOrUpdateFeePayment = async (req, res) => {
         });
 
         if (existingFeePayment) {
-            existingFeePayment.dues = dues;
+            // Update dues if necessary (e.g., based on new payments)
+            existingFeePayment.dues = dues; // Ensure this is calculated correctly based on your logic
             existingFeePayment.feeHistory.push(...feeHistory);
             const updatedFeePayment = await existingFeePayment.save();
             res.status(201).json({
@@ -150,7 +151,7 @@ exports.getFeeHistory = async (req, res) => {
                         studentClass: studentData.class,
                         feeReceiptNumber: history.feeReceiptNumber,
                         paymentMode: history.paymentMode,
-                        dues: feeStatus.dues, // Adding dues to each fee history entry
+                        dues: feeStatus.dues, // Ensure this reflects the correct dues for the feeHistory entry
                         ...history._doc
                     });
                 });
@@ -172,6 +173,7 @@ exports.getFeeHistory = async (req, res) => {
         });
     }
 };
+
 // exports.createExam = async (req, res) => {
 //     try {
 
