@@ -1257,10 +1257,10 @@ exports.createRegistration = async (req, res) => {
 // Controller for fetching all registrations (GET)
 exports.getRegistrations = async (req, res) => {
   try {
-    const registrations = await NewRegistrationModel.find({});
+    const registrations = await NewRegistrationModel.find({ schoolId: req.user.schoolId });
     return res.status(200).json({
       success: true,
-      message: "Registrations Data Successfully Get",
+      message: "Registrations Data Successfully Fetched",
       data: registrations,
     });
   } catch (error) {
@@ -1276,7 +1276,7 @@ exports.getRegistrations = async (req, res) => {
 exports.getRegistrationById = async (req, res) => {
   try {
     const { id } = req.params;
-    const registration = await NewRegistrationModel.findById(id);
+    const registration = await NewRegistrationModel.findOne({ _id: id, schoolId: req.user.schoolId });
     
     if (!registration) {
       return res.status(404).json({
@@ -1303,8 +1303,7 @@ exports.getRegistrationById = async (req, res) => {
 exports.getRegistrationByNumber = async (req, res) => {
   try {
     const { registrationNumber } = req.params;
-    // console.log(Fetching registration with registrationNumber: ${registrationNumber}); // Debug log
-    const registration = await NewRegistrationModel.findOne({ registrationNumber });
+    const registration = await NewRegistrationModel.findOne({ registrationNumber, schoolId: req.user.schoolId });
     
     if (!registration) {
       return res.status(404).json({
@@ -1318,7 +1317,7 @@ exports.getRegistrationByNumber = async (req, res) => {
       data: registration,
     });
   } catch (error) {
-    console.error('Error fetching registration:', error); // Debug log
+    console.error('Error fetching registration:', error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch registration due to an error.",
