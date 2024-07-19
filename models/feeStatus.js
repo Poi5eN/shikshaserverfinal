@@ -84,9 +84,15 @@ const feeStatus = new mongoose.Schema({
             feeReceiptNumber: {
                 type: String,
                 required: true
+            },
+            paymentMode: {
+                type: String,
+                required: true,
+                enum: ['Cash', 'Online']
             }
         }
     ]
 });
 
 module.exports = mongoose.model("feeStatus", feeStatus);
+
