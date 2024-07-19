@@ -85,10 +85,9 @@ const feeStatus = new mongoose.Schema({
                 type: String,
                 required: true
             },
-            paymentMode: {
+            paymentMode: {  // Added paymentMode field
                 type: String,
-                required: true,
-                enum: ['Cash', 'Online']
+                required: true
             }
         }
     ]
