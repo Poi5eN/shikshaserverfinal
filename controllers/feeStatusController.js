@@ -59,6 +59,7 @@ exports.createOrUpdateFeePayment = async (req, res) => {
 
 
 
+
 exports.getFeeStatus = async (req, res) => {
     try {
         const { studentId } = req.query;
@@ -145,6 +146,7 @@ exports.getFeeHistory = async (req, res) => {
                     studentName: studentData.fullName,
                     studentClass: studentData.class,
                     feeReceiptNumber: history.feeReceiptNumber,
+                    paymentMode: history.paymentMode,
                     ...history._doc
                 });
             });
@@ -163,6 +165,7 @@ exports.getFeeHistory = async (req, res) => {
         });
     }
 };
+
 
 // exports.createExam = async (req, res) => {
 //     try {
