@@ -146,7 +146,6 @@ exports.getFeeHistory = async (req, res) => {
                     studentName: studentData.fullName,
                     studentClass: studentData.class,
                     feeReceiptNumber: history.feeReceiptNumber,
-                    paymentMode: history.paymentMode,
                     ...history._doc
                 });
             });
