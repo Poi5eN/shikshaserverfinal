@@ -27,9 +27,11 @@ exports.createOrUpdateFeePayment = async (req, res) => {
         });
 
         if (existingFeePayment) {
-            // Update dues if necessary (e.g., based on new payments)
-            existingFeePayment.dues = dues; // Ensure this is calculated correctly based on your logic
-            existingFeePayment.feeHistory.push(...feeHistory);
+            // Update dues for each month based on new payments
+            feeHistory.forEach(entry => {
+                existingFeePayment.dues -= entry.paidAmount; // Adjust dues calculation based on your logic
+                existingFeePayment.feeHistory.push(entry);
+            });
             const updatedFeePayment = await existingFeePayment.save();
             res.status(201).json({
                 success: true,
@@ -41,6 +43,9 @@ exports.createOrUpdateFeePayment = async (req, res) => {
                 schoolId: req.user.schoolId,
                 year: 2023,
                 ...req.body
+            });
+            feeHistory.forEach(entry => {
+                newFeePayment.dues -= entry.paidAmount; // Adjust dues calculation based on your logic
             });
             const savedFeePayment = await newFeePayment.save();
             res.status(201).json({
@@ -57,7 +62,6 @@ exports.createOrUpdateFeePayment = async (req, res) => {
         });
     }
 };
-
 
 
 
@@ -127,6 +131,7 @@ exports.feeIncomeMonths = async (req, res) => {
     }
 }
 
+
 exports.getFeeHistory = async (req, res) => {
     try {
         const { admissionNumber } = req.query;
@@ -144,14 +149,16 @@ exports.getFeeHistory = async (req, res) => {
 
             // Check if studentData exists before using it
             if (studentData) {
+                let cumulativeDues = 0;
                 feeStatus.feeHistory.forEach(history => {
+                    cumulativeDues += history.paidAmount;
                     feeHistory.push({
                         admissionNumber: studentData.admissionNumber,
                         studentName: studentData.fullName,
                         studentClass: studentData.class,
                         feeReceiptNumber: history.feeReceiptNumber,
                         paymentMode: history.paymentMode,
-                        dues: feeStatus.dues, // Ensure this reflects the correct dues for the feeHistory entry
+                        dues: feeStatus.dues - cumulativeDues, // Calculate dues based on cumulative payments
                         ...history._doc
                     });
                 });
