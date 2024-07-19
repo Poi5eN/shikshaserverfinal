@@ -1,9 +1,19 @@
 const FeeStatus = require("../models/feeStatus");
 const NewStudentModel = require("../models/newStudentModel");
 
+// Utility function to generate unique fee receipt number
+function generateUniqueFeeReceiptNumber() {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 5; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+}
+
 exports.createOrUpdateFeePayment = async (req, res) => {
     try {
-        const { studentId, feeHistory, dues} = req.body;
+        const { studentId, feeHistory, dues } = req.body;
 
         const existingFeePayment = await FeeStatus.findOne({
             schoolId: req.user.schoolId,
@@ -11,44 +21,51 @@ exports.createOrUpdateFeePayment = async (req, res) => {
             year: 2023,
         });
 
+        // Generate unique fee receipt numbers for each fee history entry
+        feeHistory.forEach(entry => {
+            entry.feeReceiptNumber = generateUniqueFeeReceiptNumber();
+        });
+
         if (existingFeePayment) {
-            existingFeePayment.dues = dues
+            existingFeePayment.dues = dues;
             existingFeePayment.feeHistory.push(...feeHistory);
             const updatedFeePayment = await existingFeePayment.save();
             res.status(201).json({
                 success: true,
                 message: "Fee Status is Saved Successfully",
                 data: updatedFeePayment
-            })
-
+            });
         } else {
-
-            const newFeePayment = new FeeStatus({ schoolId: req.user.schoolId, year: 2023, ...req.body });
+            const newFeePayment = new FeeStatus({
+                schoolId: req.user.schoolId,
+                year: 2023,
+                ...req.body
+            });
             const savedFeePayment = await newFeePayment.save();
             res.status(201).json({
                 success: true,
                 message: "Fee Status is Saved Successfully",
                 data: savedFeePayment
-            })
+            });
         }
     } catch (error) {
         res.status(500).json({
             success: false,
             message: "Fee Status is not created Successfully",
             error: error.message
-        })
-    };
-}
+        });
+    }
+};
+
 
 
 exports.getFeeStatus = async (req, res) => {
     try {
-
         const { studentId } = req.query;
 
-        let filter ={
+        let filter = {
             ...(studentId ? { studentId: studentId } : {}),
-        }
+        };
 
         const feesData = await FeeStatus.find({ schoolId: req.user.schoolId, ...filter });
 
@@ -56,18 +73,17 @@ exports.getFeeStatus = async (req, res) => {
             success: true,
             message: "Fees Data Successfully Get",
             data: feesData
-        })
+        });
 
-    }
-    catch (error) {
+    } catch (error) {
         res.status(500).json({
             success: false,
             message: "Fees Details is not get Successfully",
             error: error.message
-        })
-
+        });
     }
-}
+};
+
 
 exports.feeIncomeMonths = async (req, res) => {
     try {
@@ -113,13 +129,11 @@ exports.getFeeHistory = async (req, res) => {
     try {
         const { studentId } = req.query;
 
-        // Construct the filter object based on the presence of studentId
         let filter = {
             schoolId: req.user.schoolId,
             ...(studentId ? { studentId: studentId } : {})
         };
 
-        // Fetching the required data from the database
         const feeStatusData = await FeeStatus.find(filter, 'studentId feeHistory').exec();
 
         let feeHistory = [];
@@ -130,6 +144,7 @@ exports.getFeeHistory = async (req, res) => {
                     admissionNumber: studentData.admissionNumber,
                     studentName: studentData.fullName,
                     studentClass: studentData.class,
+                    feeReceiptNumber: history.feeReceiptNumber,
                     ...history._doc
                 });
             });
