@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const newRegistrationSchema = new mongoose.Schema({
+  schoolId: {
+    type: String,
+    required: true
+  },
   studentFullName: {
     type: String,
     required: true,
