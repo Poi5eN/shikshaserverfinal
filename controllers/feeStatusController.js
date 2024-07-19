@@ -13,11 +13,11 @@ function generateUniqueFeeReceiptNumber() {
 
 exports.createOrUpdateFeePayment = async (req, res) => {
     try {
-        const { studentId, feeHistory, dues } = req.body;
+        const { admissionNumber, feeHistory, dues } = req.body;
 
         const existingFeePayment = await FeeStatus.findOne({
             schoolId: req.user.schoolId,
-            studentId,
+            admissionNumber,
             year: 2023,
         });
 
@@ -62,10 +62,10 @@ exports.createOrUpdateFeePayment = async (req, res) => {
 
 exports.getFeeStatus = async (req, res) => {
     try {
-        const { studentId } = req.query;
+        const { admissionNumber } = req.query;
 
         let filter = {
-            ...(studentId ? { studentId: studentId } : {}),
+            ...(admissionNumber ? { admissionNumber: admissionNumber } : {}),
         };
 
         const feesData = await FeeStatus.find({ schoolId: req.user.schoolId, ...filter });
@@ -128,18 +128,18 @@ exports.feeIncomeMonths = async (req, res) => {
 
 exports.getFeeHistory = async (req, res) => {
     try {
-        const { studentId } = req.query;
+        const { admissionNumber } = req.query;
 
         let filter = {
             schoolId: req.user.schoolId,
-            ...(studentId ? { studentId: studentId } : {})
+            ...(admissionNumber ? { admissionNumber: admissionNumber } : {})
         };
 
-        const feeStatusData = await FeeStatus.find(filter, 'studentId feeHistory').exec();
+        const feeStatusData = await FeeStatus.find(filter, 'admissionNumber feeHistory').exec();
 
         let feeHistory = [];
         for (const feeStatus of feeStatusData) {
-            const studentData = await NewStudentModel.findOne({ _id: feeStatus.studentId }, 'fullName class admissionNumber').exec();
+            const studentData = await NewStudentModel.findOne({ _id: feeStatus.admissionNumber }, 'fullName class admissionNumber').exec();
             feeStatus.feeHistory.forEach(history => {
                 feeHistory.push({
                     admissionNumber: studentData.admissionNumber,
