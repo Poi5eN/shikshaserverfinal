@@ -150,6 +150,7 @@ exports.getFeeHistory = async (req, res) => {
                         studentClass: studentData.class,
                         feeReceiptNumber: history.feeReceiptNumber,
                         paymentMode: history.paymentMode,
+                        dues: feeStatus.dues, // Adding dues to each fee history entry
                         ...history._doc
                     });
                 });
@@ -171,7 +172,6 @@ exports.getFeeHistory = async (req, res) => {
         });
     }
 };
-
 // exports.createExam = async (req, res) => {
 //     try {
 
