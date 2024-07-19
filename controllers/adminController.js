@@ -1206,6 +1206,7 @@ exports.createRegistration = async (req, res) => {
 
     // Create new registration entry
     const registrationData = await NewRegistrationModel.create({
+      schoolId: req.user.schoolId,
       studentFullName,
       guardianName,
       registerClass,
