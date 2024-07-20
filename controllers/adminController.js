@@ -107,6 +107,25 @@ exports.getAdminInfo = async (req, res) => {
   }
 };
 
+
+// START OF TEACHER CREATION
+function generateEmployeeId() {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const numbers = '0123456789';
+  let employeeId = '';
+
+  for (let i = 0; i < 3; i++) {
+    employeeId += letters.charAt(Math.floor(Math.random() * letters.length));
+  }
+
+  for (let i = 0; i < 3; i++) {
+    employeeId += numbers.charAt(Math.floor(Math.random() * numbers.length));
+  }
+
+  return employeeId;
+}
+
+
 exports.createTeacher = async (req, res) => {
   try {
     const { email, password, ...userFields } = req.body;
@@ -118,26 +137,30 @@ exports.createTeacher = async (req, res) => {
         success: false,
         message: "Please fill the required fields",
       });
-    } 
+    }
+
     const userExist = await Teacher.findOne({ email });
 
     if (userExist) {
       return res.status(400).send({
         success: false,
-        message: "user already exist with this email",
+        message: "User already exists with this email",
       });
-    } 
+    }
+
     const hashedPassword = await hashPassword(password);
 
     const fileUri = getDataUri(file);
 
-
     const mycloud = await cloudinary.v2.uploader.upload(fileUri.content);
+
+    const employeeId = generateEmployeeId();
 
     const data = await Teacher.create({
       schoolId: req.user.schoolId,
       email: email,
       password: hashedPassword,
+      employeeId: employeeId,
       image: {
         public_id: mycloud.public_id,
         url: mycloud.secure_url,
@@ -147,30 +170,29 @@ exports.createTeacher = async (req, res) => {
 
     if (data) {
       const emailContent = `
-       <p>Your EmailID: ${email}</p>
-       <p>Your Password: ${password}</p>
-       `;
-
+        <p>Your EmailID: ${email}</p>
+        <p>Your Password: ${password}</p>
+        <p>Your Employee ID: ${employeeId}</p>
+      `;
 
       sendEmail(email, "Teacher Login Credentials", emailContent)
         .then(() => {
-            console.log("Teacher created and also send message to teacher email id")
+          console.log("Teacher created and message sent to teacher email ID");
         })
         .catch((error) => {
           return res
             .status(500)
-            .json({ success: false, message: "Error sending email to teacher email id" });
+            .json({ success: false, message: "Error sending email to teacher email ID" });
         });
     } else {
-      return res.status(500).json({ success: false, message: "teacher is not created" });
+      return res.status(500).json({ success: false, message: "Teacher is not created" });
     }
 
     res.status(201).send({
-        success: true,
-        message: "Teacher created Successfully",
-      });
-  } 
-  catch (err) {
+      success: true,
+      message: "Teacher created successfully",
+    });
+  } catch (err) {
     res.status(500).send({ error: err.message });
   }
 };
