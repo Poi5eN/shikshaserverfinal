@@ -1379,7 +1379,6 @@ exports.createStudentParent = async (req, res) => {
       studentEmail,
       studentPassword,
       studentDateOfBirth,
-      studentRollNo,
       studentGender,
       studentJoiningDate,
       studentAddress,
@@ -1393,8 +1392,6 @@ exports.createStudentParent = async (req, res) => {
       parentEmail,
       parentPassword,
       parentContact,
-      parentIncome,
-      parentQualification,
     } = req.body;
 
     if (!studentEmail || !studentPassword || !parentEmail || !parentPassword) {
@@ -1409,7 +1406,6 @@ exports.createStudentParent = async (req, res) => {
 
     const studentExist = await NewStudentModel.findOne({ email: studentEmail });
     const parentExist = await ParentModel.findOne({ email: parentEmail });
-    const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
 
     if (studentExist || parentExist) {
       return res.status(400).json({
@@ -1417,15 +1413,21 @@ exports.createStudentParent = async (req, res) => {
         message: "Already exist with this email",
       });
     }
+
     const studentHashPassword = await hashPassword(studentPassword);
     const parentHashPassword = await hashPassword(parentPassword);
 
     const studentFileUri = getDataUri(studentFile);
     const parentFileUri = getDataUri(parentFile);
 
-    const studentImageResult = await cloudinary.uploader.upload(
-      studentFileUri.content
-    );
+    const studentImageResult = await cloudinary.uploader.upload(studentFileUri.content);
+
+    // Determine the new roll number
+    const maxRollNoStudent = await NewStudentModel.findOne({ schoolId: req.user.schoolId, class: studentClass }).sort({ rollNo: -1 }).select('rollNo');
+    let newRollNo = 1;
+    if (maxRollNoStudent) {
+      newRollNo = maxRollNoStudent.rollNo + 1;
+    }
 
     const studentData = await NewStudentModel.create({
       schoolId: req.user.schoolId,
@@ -1433,7 +1435,7 @@ exports.createStudentParent = async (req, res) => {
       email: studentEmail,
       password: studentHashPassword,
       dateOfBirth: studentDateOfBirth,
-      rollNo: studentRollNo,
+      rollNo: newRollNo,
       gender: studentGender,
       joiningDate: studentJoiningDate,
       address: studentAddress,
@@ -1444,28 +1446,26 @@ exports.createStudentParent = async (req, res) => {
       section: studentSection,
       country: studentCountry,
       subject: studentSubject,
-      admissionNumber: studentAdmissionNumber,
       image: {
         public_id: studentImageResult.public_id,
         url: studentImageResult.secure_url,
       },
     });
+
     if (studentData) {
       const studentEmailContent = `
-        <p>Your EmailID: ${studentEmail}</p>
-        <p>Your Password: ${studentPassword}</p>
-      `;
+              <p>Your EmailID: ${studentEmail}</p>
+              <p>Your Password: ${studentPassword}</p>
+              `;
 
       sendEmail(studentEmail, "Student Login Credentials", studentEmailContent)
         .then(() => {
-          console.log(
-            "Student Created and also send message to student email Id"
-          );
+          console.log("Student Created and also send message to student email Id");
         })
         .catch((error) => {
           return res.status(500).json({
             success: false,
-            message: "Mail is not sent to Student Email Address due to error",
+            message: "Mail is not send to Student Email Address due to error",
             error: error.message,
           });
         });
@@ -1476,11 +1476,7 @@ exports.createStudentParent = async (req, res) => {
       });
     }
 
-    const parentImageResult = await cloudinary.uploader.upload(
-      parentFileUri.content
-    );
-
-    const parentAdmissionNumber = await generateAdmissionNumber(ParentModel);
+    const parentImageResult = await cloudinary.uploader.upload(parentFileUri.content);
 
     const parentData = await ParentModel.create({
       schoolId: req.user.schoolId,
@@ -1491,9 +1487,6 @@ exports.createStudentParent = async (req, res) => {
       email: parentEmail,
       password: parentHashPassword,
       contact: parentContact,
-      admissionNumber: parentAdmissionNumber,
-      income: parentIncome,
-      qualification: parentQualification,
       image: {
         public_id: parentImageResult.public_id,
         url: parentImageResult.secure_url,
@@ -1504,20 +1497,18 @@ exports.createStudentParent = async (req, res) => {
       studentData.parentId = parentData._id;
       await studentData.save();
       const parentEmailContent = `
-        <p>Your EmailID: ${parentEmail}</p>
-        <p>Your Password: ${parentPassword}</p>
-      `;
+              <p>Your EmailID: ${parentEmail}</p>
+              <p>Your Password: ${parentPassword}</p>
+              `;
 
       sendEmail(parentEmail, "Parent Login Credentials", parentEmailContent)
         .then(() => {
-          console.log(
-            "Parent Created and also send message to Parent email Id"
-          );
+          console.log("Parent Created and also send message to Parent email Id");
         })
         .catch((error) => {
           return res.status(500).json({
             success: false,
-            message: "Email is not sent",
+            message: "Email is not send",
             error: error.message,
           });
         });
@@ -1530,13 +1521,12 @@ exports.createStudentParent = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message:
-        "Student and its Parent Created and also send message to Student email id and Parent email Id",
+      message: "Student and its Parent Created and also send message to Student email id and Parent email Id",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Student and Parent are not registered due to error",
+      message: "Student and Parent is not register due to error",
       error: error.message,
     });
   }
