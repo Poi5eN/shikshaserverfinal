@@ -1,3 +1,187 @@
+// const FeeStatus = require("../models/feeStatus");
+// const NewStudentModel = require("../models/newStudentModel");
+
+// // Utility function to generate unique fee receipt number
+// function generateUniqueFeeReceiptNumber() {
+//     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+//     let result = '';
+//     for (let i = 0; i < 5; i++) {
+//         result += characters.charAt(Math.floor(Math.random() * characters.length));
+//     }
+//     return result;
+// }
+
+// exports.createOrUpdateFeePayment = async (req, res) => {
+//     try {
+//         const { admissionNumber, feeHistory, dues } = req.body;
+
+//         const existingFeePayment = await FeeStatus.findOne({
+//             schoolId: req.user.schoolId,
+//             admissionNumber,
+//             year: 2024,
+//         });
+
+//         // Generate unique fee receipt numbers for each fee history entry
+//         feeHistory.forEach(entry => {
+//             entry.feeReceiptNumber = generateUniqueFeeReceiptNumber();
+//         });
+
+//         if (existingFeePayment) {
+//             // Update dues for each month based on new payments
+//             feeHistory.forEach(entry => {
+//                 existingFeePayment.dues = dues; // Adjust dues calculation based on your logic
+//                 existingFeePayment.feeHistory.push(...feeHistory);
+//             });
+//             const updatedFeePayment = await existingFeePayment.save();
+//             res.status(201).json({
+//                 success: true,
+//                 message: "Fee Status is Saved Successfully",
+//                 data: updatedFeePayment
+//             });
+//         } else {
+//             const newFeePayment = new FeeStatus({
+//                 schoolId: req.user.schoolId,
+//                 year: 2024,
+//                 ...req.body
+//             });
+//             feeHistory.forEach(entry => {
+//                 newFeePayment.dues = dues; // Adjust dues calculation based on your logic
+//             });
+//             const savedFeePayment = await newFeePayment.save();
+//             res.status(201).json({
+//                 success: true,
+//                 message: "Fee Status is Saved Successfully",
+//                 data: savedFeePayment
+//             });
+//         }
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: "Fee Status is not created Successfully",
+//             error: error.message
+//         });
+//     }
+// };
+
+
+
+// exports.getFeeStatus = async (req, res) => {
+//     try {
+//         const { admissionNumber } = req.query;
+
+//         let filter = {
+//             ...(admissionNumber ? { admissionNumber: admissionNumber } : {}),
+//         };
+
+//         const feesData = await FeeStatus.find({ schoolId: req.user.schoolId, ...filter });
+
+//         res.status(200).json({
+//             success: true,
+//             message: "Fees Data Successfully Get",
+//             data: feesData
+//         });
+
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: "Fees Details is not get Successfully",
+//             error: error.message
+//         });
+//     }
+// };
+
+
+// exports.feeIncomeMonths = async (req, res) => {
+//     try {
+
+//         const feesData = await FeeStatus.find({ schoolId: req.user.schoolId });
+
+//         let arr = new Array(12);
+
+//         for (let i=0; i<12; i++) arr[i] = 0;
+
+//         console.log("feesData.length", feesData.length)
+
+//         for (let j=0; j<feesData.length; j++) {
+
+//             console.log("feesData[j].feeHistory.length", feesData[j].feeHistory.length)
+//             for (let k=0; k<feesData[j].feeHistory.length; k++) {
+
+//                 console.log("feesData[j].feeHistory[k].paidAmount", feesData[j].feeHistory[k].paidAmount);
+//                 arr[k] += Number(feesData[j].feeHistory[k].paidAmount);
+//             }
+
+//         }
+
+//         console.log(arr);
+
+//         res.status(200).json({
+//             success: true,
+//             message: "Fees Data Successfully Get",
+//             data: arr
+//         })
+
+//     }
+//     catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: "Fee Income According to month is not get due to error",
+//             error: error.message
+//         })
+//     }
+// }
+
+
+// exports.getFeeHistory = async (req, res) => {
+//     try {
+//         const { admissionNumber } = req.query;
+
+//         let filter = {
+//             schoolId: req.user.schoolId,
+//             ...(admissionNumber ? { admissionNumber: admissionNumber } : {})
+//         };
+
+//         const feeStatusData = await FeeStatus.find(filter).exec();
+
+//         let feeHistory = [];
+//         for (const feeStatus of feeStatusData) {
+//             const studentData = await NewStudentModel.findOne({ admissionNumber: feeStatus.admissionNumber }, 'fullName class admissionNumber').exec();
+
+//             // Check if studentData exists before using it
+//             if (studentData) {
+//                 let cumulativeDues = 0;
+//                 feeStatus.feeHistory.forEach(history => {
+//                     cumulativeDues += history.paidAmount;
+//                     feeHistory.push({
+//                         admissionNumber: studentData.admissionNumber,
+//                         studentName: studentData.fullName,
+//                         studentClass: studentData.class,
+//                         feeReceiptNumber: history.feeReceiptNumber,
+//                         paymentMode: history.paymentMode,
+//                         dues: feeStatus.dues - cumulativeDues, // Calculate dues based on cumulative payments
+//                         ...history._doc
+//                     });
+//                 });
+//             } else {
+//                 console.error(`Student with admissionNumber ${feeStatus.admissionNumber} not found`);
+//             }
+//         }
+
+//         res.status(200).json({
+//             success: true,
+//             message: "Fee history retrieved successfully",
+//             data: feeHistory,
+//         });
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: "Failed to retrieve fee history",
+//             error: error.message,
+//         });
+//     }
+// };
+
+
 const FeeStatus = require("../models/feeStatus");
 const NewStudentModel = require("../models/newStudentModel");
 
@@ -11,14 +195,31 @@ function generateUniqueFeeReceiptNumber() {
     return result;
 }
 
+// Placeholder function to fetch the monthly fee for a class
+async function getMonthlyFeeForClass(className) {
+    // Implement the logic to fetch the monthly fee for the class, e.g., from another API
+    // Here, we use a fixed value for demonstration purposes
+    const fees = {
+        "classA": 1000,
+        "classB": 1200,
+        // Add other classes as needed
+    };
+    return fees[className] || 1000; // Default to 1000 if class not found
+}
+
 exports.createOrUpdateFeePayment = async (req, res) => {
     try {
-        const { admissionNumber, feeHistory, dues } = req.body;
+        const { admissionNumber, feeHistory, className } = req.body;
+        const schoolId = req.user.schoolId;
+        const year = 2023;
+
+        // Fetch the monthly fee for the class
+        const monthlyFee = await getMonthlyFeeForClass(className);
 
         const existingFeePayment = await FeeStatus.findOne({
-            schoolId: req.user.schoolId,
+            schoolId,
             admissionNumber,
-            year: 2024,
+            year,
         });
 
         // Generate unique fee receipt numbers for each fee history entry
@@ -29,9 +230,16 @@ exports.createOrUpdateFeePayment = async (req, res) => {
         if (existingFeePayment) {
             // Update dues for each month based on new payments
             feeHistory.forEach(entry => {
-                existingFeePayment.dues = dues; // Adjust dues calculation based on your logic
-                existingFeePayment.feeHistory.push(...feeHistory);
+                existingFeePayment.dues -= entry.paidAmount; // Adjust dues calculation based on your logic
+                existingFeePayment.feeHistory.push(entry);
             });
+
+            // Recalculate the dues
+            existingFeePayment.dues = 0;
+            existingFeePayment.feeHistory.forEach(entry => {
+                existingFeePayment.dues += monthlyFee - entry.paidAmount;
+            });
+
             const updatedFeePayment = await existingFeePayment.save();
             res.status(201).json({
                 success: true,
@@ -40,13 +248,23 @@ exports.createOrUpdateFeePayment = async (req, res) => {
             });
         } else {
             const newFeePayment = new FeeStatus({
-                schoolId: req.user.schoolId,
-                year: 2024,
-                ...req.body
+                schoolId,
+                admissionNumber,
+                year,
+                dues: 0,
+                feeHistory,
+                monthlyDues: []
             });
+
+            // Calculate the initial dues based on the fee history
             feeHistory.forEach(entry => {
-                newFeePayment.dues = dues; // Adjust dues calculation based on your logic
+                newFeePayment.dues += monthlyFee - entry.paidAmount;
+                newFeePayment.monthlyDues.push({
+                    month: entry.month,
+                    dueAmount: monthlyFee - entry.paidAmount
+                });
             });
+
             const savedFeePayment = await newFeePayment.save();
             res.status(201).json({
                 success: true,
@@ -62,6 +280,9 @@ exports.createOrUpdateFeePayment = async (req, res) => {
         });
     }
 };
+
+
+
 
 
 
@@ -149,16 +370,15 @@ exports.getFeeHistory = async (req, res) => {
 
             // Check if studentData exists before using it
             if (studentData) {
-                let cumulativeDues = 0;
                 feeStatus.feeHistory.forEach(history => {
-                    cumulativeDues += history.paidAmount;
+                    const monthDue = feeStatus.monthlyDues.find(md => md.month === history.month);
                     feeHistory.push({
                         admissionNumber: studentData.admissionNumber,
                         studentName: studentData.fullName,
                         studentClass: studentData.class,
                         feeReceiptNumber: history.feeReceiptNumber,
                         paymentMode: history.paymentMode,
-                        dues: feeStatus.dues - cumulativeDues, // Calculate dues based on cumulative payments
+                        dues: monthDue ? monthDue.dueAmount : 0, // Get dues for the specific month
                         ...history._doc
                     });
                 });
@@ -182,127 +402,128 @@ exports.getFeeHistory = async (req, res) => {
 };
 
 
-// exports.createExam = async (req, res) => {
-//     try {
 
-//         const {studentId, year, feeHistory} = req.body;
+// // exports.createExam = async (req, res) => {
+// //     try {
 
-//         // if (!examName || !className || !section || !examInfo) {
-//         //     return res.status(404).json({
-//         //         success: false,
-//         //         message: "Record Not Found Please Fill All Required Details"
-//         //     })
-//         // }
+// //         const {studentId, year, feeHistory} = req.body;
 
-//         // const existExam = await ExamModel.findOne({
-//         //     "schoolId": req.user.schoolId,
-//         //     "className": req.user.classTeacher,
-//         //     "section": req.user.section
-//         // })
+// //         // if (!examName || !className || !section || !examInfo) {
+// //         //     return res.status(404).json({
+// //         //         success: false,
+// //         //         message: "Record Not Found Please Fill All Required Details"
+// //         //     })
+// //         // }
 
-//         // if (existExam) {
-//         //     return res.status(400).json({
-//         //         success: false,
-//         //         message: "Exam of that class and section is already created"
-//         //     })
-//         // }
+// //         // const existExam = await ExamModel.findOne({
+// //         //     "schoolId": req.user.schoolId,
+// //         //     "className": req.user.classTeacher,
+// //         //     "section": req.user.section
+// //         // })
 
-//         const feesData = await FeeStatus.create({
-//             schoolId: req.user.schoolId,
-//             studentId,
-//             year
-//         })
+// //         // if (existExam) {
+// //         //     return res.status(400).json({
+// //         //         success: false,
+// //         //         message: "Exam of that class and section is already created"
+// //         //     })
+// //         // }
 
-//         res.status(201).json({
-//             success: true,
-//             message: "Exam is Successfully Created",
-//             examData
-//         })
+// //         const feesData = await FeeStatus.create({
+// //             schoolId: req.user.schoolId,
+// //             studentId,
+// //             year
+// //         })
 
-//     }
-//     catch (error) {
-//         res.status(500).json({
-//             success: false,
-//             message: "Exam is not created Successfully",
-//             error: error.message
-//         })
-//     }
-// }
+// //         res.status(201).json({
+// //             success: true,
+// //             message: "Exam is Successfully Created",
+// //             examData
+// //         })
 
-// exports.deleteExam = async (req, res) => {
-//     try {
+// //     }
+// //     catch (error) {
+// //         res.status(500).json({
+// //             success: false,
+// //             message: "Exam is not created Successfully",
+// //             error: error.message
+// //         })
+// //     }
+// // }
 
-//         const {examId} = req.params;
+// // exports.deleteExam = async (req, res) => {
+// //     try {
 
-//         const existExam = await ExamModel.findById(examId);
+// //         const {examId} = req.params;
 
-//         if (!existExam) {
-//             return res.status(404).json({
-//                 success: false,
-//                 message: "Exam Data not found"
-//             })
-//         }
+// //         const existExam = await ExamModel.findById(examId);
 
-//         const deletedExam = await existExam.deleteOne();
+// //         if (!existExam) {
+// //             return res.status(404).json({
+// //                 success: false,
+// //                 message: "Exam Data not found"
+// //             })
+// //         }
 
-//         res.status(200).json({
-//             success: true,
-//             message: "Deleted Exam Info is Successfully",
-//             deletedExam
-//         })
+// //         const deletedExam = await existExam.deleteOne();
 
-//     } 
-//     catch (error) {
+// //         res.status(200).json({
+// //             success: true,
+// //             message: "Deleted Exam Info is Successfully",
+// //             deletedExam
+// //         })
 
-//         res.status(500).json({
-//             success: false,
-//             message: "Delete info of Exam not done successfully due to error",
-//             error: error.message
-//         })
+// //     } 
+// //     catch (error) {
 
-//     }
-// }
+// //         res.status(500).json({
+// //             success: false,
+// //             message: "Delete info of Exam not done successfully due to error",
+// //             error: error.message
+// //         })
 
-// exports.updateExam = async (req, res) => {
-//     try {
+// //     }
+// // }
 
-//         const {...examFields} = req.body;
+// // exports.updateExam = async (req, res) => {
+// //     try {
 
-//         const existExamData = await ExamModel.findOne({
-//             schoolId: req.user.schoolId,
-//             className: examFields.className,
-//             section: examFields.section
-//         })
+// //         const {...examFields} = req.body;
 
-//         if (!existExamData) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: "Exam Details is not found"
-//             })
-//         }
+// //         const existExamData = await ExamModel.findOne({
+// //             schoolId: req.user.schoolId,
+// //             className: examFields.className,
+// //             section: examFields.section
+// //         })
 
-//         for (const key in examFields) {
+// //         if (!existExamData) {
+// //             return res.status(400).json({
+// //                 success: false,
+// //                 message: "Exam Details is not found"
+// //             })
+// //         }
 
-//             if (key === "examName" || key === "examInfo")
-//                 existExamData[key] = examFields[key]
-//         }
+// //         for (const key in examFields) {
 
-//         const updatedExamData = await existExamData.save();
+// //             if (key === "examName" || key === "examInfo")
+// //                 existExamData[key] = examFields[key]
+// //         }
 
-//         res.status(200).json({
-//             success: true,
-//             message: "Exam Details is successfully updated",
-//             updatedExamData
-//         })
+// //         const updatedExamData = await existExamData.save();
 
-//     }
-//     catch (error) {
+// //         res.status(200).json({
+// //             success: true,
+// //             message: "Exam Details is successfully updated",
+// //             updatedExamData
+// //         })
 
-//         res.status(500).json({
-//             success: false,
-//             message: "Update Details of Exam is not successfully",
-//             error: error.message
-//         })
+// //     }
+// //     catch (error) {
 
-//     }
-// }
+// //         res.status(500).json({
+// //             success: false,
+// //             message: "Update Details of Exam is not successfully",
+// //             error: error.message
+// //         })
+
+// //     }
+// // }
