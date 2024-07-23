@@ -18,7 +18,7 @@ exports.createOrUpdateFeePayment = async (req, res) => {
         const existingFeePayment = await FeeStatus.findOne({
             schoolId: req.user.schoolId,
             admissionNumber,
-            year: 2023,
+            year: 2024,
         });
 
         // Generate unique fee receipt numbers for each fee history entry
@@ -29,8 +29,8 @@ exports.createOrUpdateFeePayment = async (req, res) => {
         if (existingFeePayment) {
             // Update dues for each month based on new payments
             feeHistory.forEach(entry => {
-                existingFeePayment.dues -= entry.paidAmount; // Adjust dues calculation based on your logic
-                existingFeePayment.feeHistory.push(entry);
+                existingFeePayment.dues = dues; // Adjust dues calculation based on your logic
+                existingFeePayment.feeHistory.push(...feeHistory);
             });
             const updatedFeePayment = await existingFeePayment.save();
             res.status(201).json({
@@ -41,11 +41,11 @@ exports.createOrUpdateFeePayment = async (req, res) => {
         } else {
             const newFeePayment = new FeeStatus({
                 schoolId: req.user.schoolId,
-                year: 2023,
+                year: 2024,
                 ...req.body
             });
             feeHistory.forEach(entry => {
-                newFeePayment.dues -= entry.paidAmount; // Adjust dues calculation based on your logic
+                newFeePayment.dues = dues; // Adjust dues calculation based on your logic
             });
             const savedFeePayment = await newFeePayment.save();
             res.status(201).json({
@@ -180,6 +180,7 @@ exports.getFeeHistory = async (req, res) => {
         });
     }
 };
+
 
 // exports.createExam = async (req, res) => {
 //     try {
