@@ -2317,21 +2317,20 @@ exports.updateEmployee = async (req, res) => {
   }
 };
 
+// Create Class
 exports.createClass = async (req, res) => {
   try {
-    const { className, section, subject, primary } = req.body;
+    const { className, section, subject } = req.body;
 
     const existClass = await classModel.findOne({
       schoolId: req.user.schoolId,
-      className,
-      section,
-      primary
+      className
     });
 
     if (existClass) {
       return res.status(400).json({
         success: false,
-        message: "This Class is already Created, You Don't Created Again",
+        message: "This Class is already Created, You Don't Create Again",
       });
     }
 
@@ -2339,13 +2338,13 @@ exports.createClass = async (req, res) => {
       schoolId: req.user.schoolId,
       className,
       section,
-      subject,
-      primary
+      subject
     });
 
     res.status(200).json({
       success: true,
       message: "Class is Created Successfully",
+      classOfSchool
     });
   } catch (error) {
     res.status(500).json({
@@ -2356,13 +2355,13 @@ exports.createClass = async (req, res) => {
   }
 };
 
+// Get All Classes
 exports.getAllClass = async (req, res) => {
   try {
-    const { className, primary } = req.query;
+    const { className } = req.query;
     
     const filter = {
-      ...(className ? { className } : {}),
-      ...(primary ? { primary }: {})
+      ...(className ? { className } : {})
     };
 
     const classList = await classModel.find({
@@ -2379,7 +2378,7 @@ exports.getAllClass = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "class list is fetched successfully",
+      message: "Class list is fetched successfully",
       classList,
     });
   } catch (error) {
@@ -2391,6 +2390,7 @@ exports.getAllClass = async (req, res) => {
   }
 };
 
+// Update Class
 exports.updateClass = async (req, res) => {
   try {
     const { className, section, subject } = req.body;
@@ -2402,7 +2402,7 @@ exports.updateClass = async (req, res) => {
     if (!existClass) {
       return res.status(404).json({
         success: false,
-        message: "Class is not Exist",
+        message: "Class does not Exist",
       });
     }
 
@@ -2414,12 +2414,12 @@ exports.updateClass = async (req, res) => {
       existClass.subject = subject;
     }
 
-    const updateClass = await existClass.save();
+    const updatedClass = await existClass.save();
 
     res.status(200).json({
       success: true,
       message: "Class is updated successfully",
-      updateClass,
+      updatedClass,
     });
   } catch (error) {
     res.status(500).json({
@@ -2430,6 +2430,7 @@ exports.updateClass = async (req, res) => {
   }
 };
 
+// Delete Class
 exports.deleteClass = async (req, res) => {
   try {
     const { _id } = req.query;
@@ -2441,16 +2442,16 @@ exports.deleteClass = async (req, res) => {
     if (!existClass) {
       return res.status(404).json({
         success: false,
-        message: "Class is not Exist",
+        message: "Class does not Exist",
       });
     }
 
-    const deleteClass = await existClass.deleteOne();
+    const deletedClass = await existClass.deleteOne();
 
     res.status(200).json({
       success: true,
       message: "Deleted Successfully",
-      deleteClass,
+      deletedClass,
     });
   } catch (error) {
     res.status(500).json({
@@ -2460,6 +2461,7 @@ exports.deleteClass = async (req, res) => {
     });
   }
 };
+
 
 exports.getAllStudentStatus = async (req, res) => {
   try {
