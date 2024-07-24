@@ -9,11 +9,8 @@ const classSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    section :[String],
-    subject :[String],
-    primary: {
-        type: Boolean,
-        default: false
-    }
-})
-module.exports = mongoose.model('Class', classSchema)
+    section: [String],
+    subject: [String]
+});
+
+module.exports = mongoose.model('Class', classSchema);
