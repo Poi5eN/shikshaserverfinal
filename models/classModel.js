@@ -22,4 +22,5 @@ const classSchema = new mongoose.Schema({
     default: false
   }
 })
-module.exports = mongoose.model('Class', classSchema)
+// Check if the model already exists to avoid OverwriteModelError
+module.exports = mongoose.models.Class || mongoose.model('Class', classSchema);
