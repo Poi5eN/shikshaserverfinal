@@ -305,126 +305,117 @@ exports.getAllTeachers = async (req, res) => {
 
 // Create a fee structure for a class
 exports.createFeeStructure = async (req, res) => {
-  try {
-    const { className, feeType, amount } = req.body;
+    try {
+        const { className, feeType, amount } = req.body;
+        const schoolId = req.user.schoolId;
 
-    const feesExist = await FeeStructure.findOne({
-      schoolId: req.user.schoolId,
-      className,
-    });
+        const feesExist = await FeeStructure.findOne({
+            schoolId,
+            className,
+        });
 
-    if (feesExist) {
-      return res.status(400).json({
-        success: false,
-        message: "Fees already exist",
-      });
+        if (feesExist) {
+            return res.status(400).json({
+                success: false,
+                message: "Fees already exist",
+            });
+        }
+
+        const feeStructure = new FeeStructure({
+            schoolId,
+            className,
+            feeType,
+            amount,
+        });
+
+        await feeStructure.save();
+
+        return res.status(201).json({
+            success: true,
+            message: "Fee structure created successfully",
+            feeStructure,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: error.message });
     }
-
-    const feeStructure = new FeeStructure({
-      schoolId: req.user.schoolId,
-      className,
-      feeType,
-      amount,
-    });
-
-    await feeStructure.save();
-
-    return res
-      .status(201)
-      .json({ message: "Fee structure created successfully" });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: error.message });
-  }
 };
 
 // Get fee structures for all classes in a school
 exports.getAllFeeStructures = async (req, res) => {
-  try {
-    const { _id, className } = req.query;
+    try {
+        const { _id, className } = req.query;
+        const schoolId = req.user.schoolId;
 
-    const filter = {
-      ...(_id ? { _id: _id } : {}),
-      ...(className ? { className: className } : {}),
-    };
+        const filter = {
+            schoolId,
+            ...(_id && { _id }),
+            ...(className && { className }),
+        };
 
-    const feeStructures = await FeeStructure.find({
-      schoolId: req.user.schoolId,
-      ...filter,
-      additional: false,
-    });
-    res.status(200).json(feeStructures);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal server error" });
-  }
+        const feeStructures = await FeeStructure.find({
+            ...filter,
+            additional: false,
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Fee structures fetched successfully",
+            feeStructures,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal server error" });
+    }
 };
 
 exports.updateFees = async (req, res) => {
-  try {
-    const { feeStructureId } = req.params;
-    // const { fees } = req.body;
+    try {
+        const { feeStructureId } = req.params;
+        const updatedData = req.body;
 
-    // Find the fee structure by ID
-    const feeStructure = await FeeStructure.findByIdAndUpdate(
-      feeStructureId,
-      req.body
-    );
+        const feeStructure = await FeeStructure.findByIdAndUpdate(feeStructureId, updatedData, { new: true });
 
-    // if (!feeStructure) {
-    //   return res.status(404).json({ message: "Fee structure not found" });
-    // }
+        if (!feeStructure) {
+            return res.status(404).json({ message: "Fee structure not found" });
+        }
 
-    // Iterate through the updated fees array and update the corresponding fees
-    // fees.forEach((updatedFee) => {
-    //   const existingFee = feeStructure.fees.findIndex((fee) =>
-    //     fee._id.equals(updatedFee._id)
-    //   );
-
-    // if (existingFee) {
-    //   existingFee.amount = updatedFee.amount;
-    // }
-    // });
-
-    // Save the updated fee structure
-    // const updatedFeeStructure = await feeStructure.save();
-
-    res.status(200).json(feeStructure);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: error.message });
-  }
+        res.status(200).json({
+            success: true,
+            message: "Fee structure updated successfully",
+            feeStructure,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message });
+    }
 };
 
 exports.deleteFees = async (req, res) => {
-  try {
-    const { feeStructureId } = req.params;
-    console.log(feeStructureId);
+    try {
+        const { feeStructureId } = req.params;
 
-    const fees = await FeeStructure.findById({ _id: feeStructureId });
+        const fees = await FeeStructure.findByIdAndDelete(feeStructureId);
 
-    // console.log(bookData);
+        if (!fees) {
+            return res.status(404).json({
+                success: false,
+                message: "Fees do not exist",
+            });
+        }
 
-    if (!fees) {
-      return res.status(200).json({
-        success: false,
-        Message: "fees doesnot exist ",
-      });
+        res.status(200).json({
+            success: true,
+            message: "Fees deleted successfully",
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
     }
-
-    await FeeStructure.deleteOne({ _id: feeStructureId });
-
-    res.status(200).json({
-      success: true,
-      Message: "fees deleted successfully",
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
 };
+
 
 exports.createAdditionalFee = async (req, res) => {
   try {
@@ -2317,125 +2308,33 @@ exports.updateEmployee = async (req, res) => {
   }
 };
 
-exports.createClass = async (req, res) => {
-    try {
-        const { className, section, subject, primary } = req.body;
-        const schoolId = req.user.schoolId;
+const mongoose = require('mongoose');
 
-        const existClass = await classModel.findOne({ schoolId, className, section });
-
-        if (existClass) {
-            return res.status(400).json({
-                success: false,
-                message: "This Class is already created, you don't need to create it again",
-            });
-        }
-
-        const classOfSchool = await classModel.create({ schoolId, className, section, subject, primary });
-
-        res.status(201).json({
-            success: true,
-            message: "Class is created successfully",
-            classOfSchool,
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Class is not created due to an error",
-            error: error.message,
-        });
+const classSchema = new mongoose.Schema({
+    schoolId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'School', // Assuming you have a School model
+        required: true
+    },
+    className: {
+        type: String,
+        required: true
+    },
+    section: {
+        type: [String],
+        default: []
+    },
+    subject: {
+        type: [String],
+        default: []
+    },
+    primary: {
+        type: Boolean,
+        default: false
     }
-};
+});
 
-exports.getAllClass = async (req, res) => {
-    try {
-        const { className, primary } = req.query;
-        const schoolId = req.user.schoolId;
-
-        const filter = {
-            schoolId,
-            ...(className && { className }),
-            ...(primary && { primary: primary === 'true' }),
-        };
-
-        const classList = await classModel.find(filter);
-
-        res.status(200).json({
-            success: true,
-            message: "Class list is fetched successfully",
-            classList,
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Class list is not fetched due to an error",
-            error: error.message,
-        });
-    }
-};
-
-exports.updateClass = async (req, res) => {
-    try {
-        const { className, section, subject, primary } = req.body;
-        const schoolId = req.user.schoolId;
-
-        const existClass = await classModel.findOne({ schoolId, className });
-
-        if (!existClass) {
-            return res.status(404).json({
-                success: false,
-                message: "Class does not exist",
-            });
-        }
-
-        existClass.section = section || existClass.section;
-        existClass.subject = subject || existClass.subject;
-        existClass.primary = primary !== undefined ? primary : existClass.primary;
-
-        const updatedClass = await existClass.save();
-
-        res.status(200).json({
-            success: true,
-            message: "Class is updated successfully",
-            updatedClass,
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Update is not done due to an error",
-            error: error.message,
-        });
-    }
-};
-
-exports.deleteClass = async (req, res) => {
-    try {
-        const { id } = req.query;
-        const schoolId = req.user.schoolId;
-
-        const existClass = await classModel.findOne({ schoolId, _id: id });
-
-        if (!existClass) {
-            return res.status(404).json({
-                success: false,
-                message: "Class does not exist",
-            });
-        }
-
-        await existClass.deleteOne();
-
-        res.status(200).json({
-            success: true,
-            message: "Class is deleted successfully",
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Class is not deleted due to an error",
-            error: error.message,
-        });
-    }
-};
+module.exports = mongoose.model('Class', classSchema);
 
 exports.getAllStudentStatus = async (req, res) => {
   try {
