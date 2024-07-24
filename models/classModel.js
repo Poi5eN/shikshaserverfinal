@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const classSchema = new mongoose.Schema({
-    schoolId : {
+    schoolId: {
         type: String,
         required: true
     },
@@ -12,5 +12,8 @@ const classSchema = new mongoose.Schema({
     section: [String],
     subject: [String]
 });
+
+// Add a unique index on schoolId and className
+classSchema.index({ schoolId: 1, className: 1 }, { unique: true });
 
 module.exports = mongoose.model('Class', classSchema);
