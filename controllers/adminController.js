@@ -2451,7 +2451,7 @@ exports.deleteClass = async (req, res) => {
       deletedClass,
     });
   } catch (error) {
-    res.status 500().json({
+    res.status (500).json({
       success: false,
       message: "Class is not deleted Due to error",
       error: error.message,
