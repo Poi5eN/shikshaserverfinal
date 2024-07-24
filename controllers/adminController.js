@@ -2318,21 +2318,10 @@ exports.updateEmployee = async (req, res) => {
 };
 
 // Create Class
+// Create Class
 exports.createClass = async (req, res) => {
   try {
     const { className, section, subject } = req.body;
-
-    const existClass = await classModel.findOne({
-      schoolId: req.user.schoolId,
-      className
-    });
-
-    if (existClass) {
-      return res.status(400).json({
-        success: false,
-        message: "This Class is already Created, You Don't Create Again",
-      });
-    }
 
     const classOfSchool = await classModel.create({
       schoolId: req.user.schoolId,
@@ -2347,6 +2336,13 @@ exports.createClass = async (req, res) => {
       classOfSchool
     });
   } catch (error) {
+    if (error.code === 11000) {
+      // Duplicate key error
+      return res.status(400).json({
+        success: false,
+        message: "This Class is already Created, You Don't Create Again",
+      });
+    }
     res.status(500).json({
       success: false,
       message: "Class is not created Due to error",
@@ -2372,7 +2368,7 @@ exports.getAllClass = async (req, res) => {
     if (!classList) {
       return res.status(404).json({
         success: false,
-        message: "Class is not fetch due to error",
+        message: "Class is not fetched due to error",
       });
     }
 
@@ -2384,7 +2380,7 @@ exports.getAllClass = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Class list is not Get due to error",
+      message: "Class list is not fetched due to error",
       error: error.message,
     });
   }
@@ -2461,6 +2457,7 @@ exports.deleteClass = async (req, res) => {
     });
   }
 };
+
 
 
 exports.getAllStudentStatus = async (req, res) => {
