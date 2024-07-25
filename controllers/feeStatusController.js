@@ -211,7 +211,7 @@ exports.createOrUpdateFeePayment = async (req, res) => {
     try {
         const { admissionNumber, feeHistory, className } = req.body;
         const schoolId = req.user.schoolId;
-        const year = 2023;
+        const year = new Date().getFullYear();  // Dynamically get the current year
 
         // Fetch the monthly fee for the class
         const monthlyFee = await getMonthlyFeeForClass(className);
@@ -228,16 +228,24 @@ exports.createOrUpdateFeePayment = async (req, res) => {
         });
 
         if (existingFeePayment) {
-            // Add the new fee history entries and update monthly dues
-            feeHistory.forEach(entry => {
-                existingFeePayment.feeHistory.push(entry);
-                let monthlyDue = existingFeePayment.monthlyDues.find(due => due.month === entry.month);
+            // Add or update the fee history entries and update monthly dues
+            feeHistory.forEach(newEntry => {
+                const existingEntryIndex = existingFeePayment.feeHistory.findIndex(entry => entry.month === newEntry.month);
+                if (existingEntryIndex !== -1) {
+                    // Update existing entry
+                    existingFeePayment.feeHistory[existingEntryIndex] = newEntry;
+                } else {
+                    // Add new entry
+                    existingFeePayment.feeHistory.push(newEntry);
+                }
+
+                let monthlyDue = existingFeePayment.monthlyDues.find(due => due.month === newEntry.month);
                 if (monthlyDue) {
-                    monthlyDue.dueAmount -= entry.paidAmount;
+                    monthlyDue.dueAmount = monthlyFee - newEntry.paidAmount;
                 } else {
                     existingFeePayment.monthlyDues.push({
-                        month: entry.month,
-                        dueAmount: monthlyFee - entry.paidAmount
+                        month: newEntry.month,
+                        dueAmount: monthlyFee - newEntry.paidAmount
                     });
                 }
             });
