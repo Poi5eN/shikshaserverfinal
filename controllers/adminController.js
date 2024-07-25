@@ -2322,7 +2322,11 @@ exports.updateEmployee = async (req, res) => {
 
 exports.createClass = async (req, res) => {
   try {
-    const { className, sections, subjects } = req.body;
+    let { className, sections, subjects } = req.body;
+
+    // Convert sections and subjects from comma-separated strings to arrays
+    sections = sections ? sections.split(',').map(s => s.trim()) : [];
+    subjects = subjects ? subjects.split(',').map(s => s.trim()) : [];
 
     const existClass = await classModel.findOne({
       schoolId: req.user.schoolId,
@@ -2357,6 +2361,7 @@ exports.createClass = async (req, res) => {
   }
 };
 
+
 exports.getAllClasses = async (req, res) => {
   try {
     const classList = await classModel.find({
@@ -2379,7 +2384,12 @@ exports.getAllClasses = async (req, res) => {
 
 exports.updateClass = async (req, res) => {
   try {
-    const { className, sections, subjects } = req.body;
+    let { className, sections, subjects } = req.body;
+
+    // Convert sections and subjects from comma-separated strings to arrays
+    sections = sections ? sections.split(',').map(s => s.trim()) : [];
+    subjects = subjects ? subjects.split(',').map(s => s.trim()) : [];
+
     const classToUpdate = await classModel.findOne({
       schoolId: req.user.schoolId,
       className
@@ -2392,11 +2402,11 @@ exports.updateClass = async (req, res) => {
       });
     }
 
-    if (sections) {
+    if (sections.length > 0) {
       classToUpdate.sections = sections;
     }
 
-    if (subjects) {
+    if (subjects.length > 0) {
       classToUpdate.subjects = subjects;
     }
 
@@ -2415,6 +2425,7 @@ exports.updateClass = async (req, res) => {
     });
   }
 };
+
 
 exports.deleteClass = async (req, res) => {
   try {
