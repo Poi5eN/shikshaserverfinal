@@ -187,7 +187,7 @@ const NewStudentModel = require("../models/newStudentModel");
 
 // Utility function to generate unique fee receipt number
 function generateUniqueFeeReceiptNumber() {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const characters = 'ABC0123456789';
     let result = '';
     for (let i = 0; i < 5; i++) {
         result += characters.charAt(Math.floor(Math.random() * characters.length));
@@ -228,17 +228,36 @@ exports.createOrUpdateFeePayment = async (req, res) => {
         });
 
         if (existingFeePayment) {
-            // Update dues for each month based on new payments
+            // Add the new fee history entries and update monthly dues
             feeHistory.forEach(entry => {
-                existingFeePayment.dues -= entry.paidAmount; // Adjust dues calculation based on your logic
                 existingFeePayment.feeHistory.push(entry);
+                let monthlyDue = existingFeePayment.monthlyDues.find(due => due.month === entry.month);
+                if (monthlyDue) {
+                    monthlyDue.dueAmount -= entry.paidAmount;
+                } else {
+                    existingFeePayment.monthlyDues.push({
+                        month: entry.month,
+                        dueAmount: monthlyFee - entry.paidAmount
+                    });
+                }
             });
 
-            // Recalculate the dues
-            existingFeePayment.dues = 0;
+            // Ensure monthly dues are correct for all months
+            let monthlyDuesMap = {};
             existingFeePayment.feeHistory.forEach(entry => {
-                existingFeePayment.dues += monthlyFee - entry.paidAmount;
+                if (!monthlyDuesMap[entry.month]) {
+                    monthlyDuesMap[entry.month] = monthlyFee;
+                }
+                monthlyDuesMap[entry.month] -= entry.paidAmount;
             });
+
+            existingFeePayment.monthlyDues = Object.keys(monthlyDuesMap).map(month => ({
+                month: month,
+                dueAmount: monthlyDuesMap[month]
+            }));
+
+            // Recalculate the total dues
+            existingFeePayment.dues = existingFeePayment.monthlyDues.reduce((acc, due) => acc + due.dueAmount, 0);
 
             const updatedFeePayment = await existingFeePayment.save();
             res.status(201).json({
@@ -257,13 +276,21 @@ exports.createOrUpdateFeePayment = async (req, res) => {
             });
 
             // Calculate the initial dues based on the fee history
+            let monthlyDuesMap = {};
             feeHistory.forEach(entry => {
-                newFeePayment.dues += monthlyFee - entry.paidAmount;
-                newFeePayment.monthlyDues.push({
-                    month: entry.month,
-                    dueAmount: monthlyFee - entry.paidAmount
-                });
+                if (!monthlyDuesMap[entry.month]) {
+                    monthlyDuesMap[entry.month] = monthlyFee;
+                }
+                monthlyDuesMap[entry.month] -= entry.paidAmount;
             });
+
+            newFeePayment.monthlyDues = Object.keys(monthlyDuesMap).map(month => ({
+                month: month,
+                dueAmount: monthlyDuesMap[month]
+            }));
+
+            // Calculate the total dues
+            newFeePayment.dues = newFeePayment.monthlyDues.reduce((acc, due) => acc + due.dueAmount, 0);
 
             const savedFeePayment = await newFeePayment.save();
             res.status(201).json({
@@ -280,10 +307,6 @@ exports.createOrUpdateFeePayment = async (req, res) => {
         });
     }
 };
-
-
-
-
 
 
 exports.getFeeStatus = async (req, res) => {
