@@ -20,6 +20,7 @@ const NewRegistrationModel = require("../models/newRegistrationModel");
 const NewStudentModel = require("../models/newStudentModel");
 const ParentModel = require("../models/parentModel");
 const EmployeeModel = require("../models/employeeModel");
+// const classModel = require("../models/classModel");
 const classModel = require("../models/classModel");
 const NoticeModel = require("../models/noticeModel");
 const CurriculumModel = require("../models/curriculumModel");
@@ -2317,144 +2318,128 @@ exports.updateEmployee = async (req, res) => {
   }
 };
 
-// Create Class
-// Create Class
-// Create Class
+// // Create a new class
+
 exports.createClass = async (req, res) => {
   try {
-    const { className, section, subject } = req.body;
+    const { className, sections, subjects } = req.body;
+
+    const existClass = await classModel.findOne({
+      schoolId: req.user.schoolId,
+      className
+    });
+
+    if (existClass) {
+      return res.status(400).json({
+        success: false,
+        message: "This class is already created. You cannot create it again."
+      });
+    }
 
     const classOfSchool = await classModel.create({
       schoolId: req.user.schoolId,
       className,
-      section,
-      subject
+      sections,
+      subjects
     });
 
-    res.status(200).json({
+    res.status(201).json({
       success: true,
-      message: "Class is Created Successfully",
-      classOfSchool
+      message: "Class created successfully",
+      class: classOfSchool
     });
   } catch (error) {
-    if (error.code === 11000) {
-      // Duplicate key error
-      return res.status(400).json({
-        success: false,
-        message: "This Class is already Created, You Don't Create Again",
-      });
-    }
     res.status(500).json({
       success: false,
-      message: "Class is not created Due to error",
-      error: error.message,
+      message: "Class not created due to an error",
+      error: error.message
     });
   }
 };
 
-// Get All Classes
-exports.getAllClass = async (req, res) => {
+exports.getAllClasses = async (req, res) => {
   try {
-    const { className } = req.query;
-    
-    const filter = {
-      ...(className ? { className } : {})
-    };
-
     const classList = await classModel.find({
-      ...filter,
-      schoolId: req.user.schoolId,
+      schoolId: req.user.schoolId
     });
-
-    if (!classList) {
-      return res.status(404).json({
-        success: false,
-        message: "Class is not fetched due to error",
-      });
-    }
 
     res.status(200).json({
       success: true,
-      message: "Class list is fetched successfully",
-      classList,
+      message: "Class list fetched successfully",
+      classList
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Class list is not fetched due to error",
-      error: error.message,
+      message: "Class list not fetched due to an error",
+      error: error.message
     });
   }
 };
 
-// Update Class
 exports.updateClass = async (req, res) => {
   try {
-    const { className, section, subject } = req.body;
-    const existClass = await classModel.findOne({
+    const { className, sections, subjects } = req.body;
+    const classToUpdate = await classModel.findOne({
       schoolId: req.user.schoolId,
-      className,
+      className
     });
 
-    if (!existClass) {
+    if (!classToUpdate) {
       return res.status(404).json({
         success: false,
-        message: "Class does not Exist",
+        message: "Class not found"
       });
     }
 
-    if (section) {
-      existClass.section = section;
+    if (sections) {
+      classToUpdate.sections = sections;
     }
 
-    if (subject) {
-      existClass.subject = subject;
+    if (subjects) {
+      classToUpdate.subjects = subjects;
     }
 
-    const updatedClass = await existClass.save();
+    const updatedClass = await classToUpdate.save();
 
     res.status(200).json({
       success: true,
-      message: "Class is updated successfully",
-      updatedClass,
+      message: "Class updated successfully",
+      class: updatedClass
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Update is not done due to error",
-      error: error.message,
+      message: "Class not updated due to an error",
+      error: error.message
     });
   }
 };
 
-// Delete Class
 exports.deleteClass = async (req, res) => {
   try {
-    const { _id } = req.query;
-    const existClass = await classModel.findOne({
-      schoolId: req.user.schoolId,
-      _id,
+    const { id } = req.params;
+    const classToDelete = await classModel.findOneAndDelete({
+      _id: id,
+      schoolId: req.user.schoolId
     });
 
-    if (!existClass) {
+    if (!classToDelete) {
       return res.status(404).json({
         success: false,
-        message: "Class does not Exist",
+        message: "Class not found"
       });
     }
 
-    const deletedClass = await existClass.deleteOne();
-
     res.status(200).json({
       success: true,
-      message: "Deleted Successfully",
-      deletedClass,
+      message: "Class deleted successfully"
     });
   } catch (error) {
-    res.status (500).json({
+    res.status(500).json({
       success: false,
-      message: "Class is not deleted Due to error",
-      error: error.message,
+      message: "Class not deleted due to an error",
+      error: error.message
     });
   }
 };
