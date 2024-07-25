@@ -68,7 +68,7 @@ router.put('/updateEmployee', verifyToken, singleUpload, admin.updateEmployee);
 router.post('/createClass', verifyToken, admin.createClass);
 router.get('/getAllClasses', verifyToken, admin.getAllClasses);
 router.put('/updateClass', verifyToken, admin.updateClass);
-router.delete('/deleteClass', verifyToken, admin.deleteClass);
+router.delete('/deleteClass/:id', verifyToken, admin.deleteClass);
 router.get('/getAllStudentStatus', verifyToken, admin.getAllStudentStatus)
 router.get('/myKids', verifyToken, admin.getMyKids);
 
