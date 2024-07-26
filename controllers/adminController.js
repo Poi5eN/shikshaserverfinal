@@ -2318,8 +2318,8 @@ exports.updateEmployee = async (req, res) => {
   }
 };
 
-// // Create a new class
 
+// Create a new class
 exports.createClass = async (req, res) => {
   try {
     let { className, sections, subjects } = req.body;
@@ -2361,7 +2361,7 @@ exports.createClass = async (req, res) => {
   }
 };
 
-
+// Get all classes
 exports.getAllClasses = async (req, res) => {
   try {
     const classList = await classModel.find({
@@ -2389,7 +2389,44 @@ exports.getAllClasses = async (req, res) => {
   }
 };
 
+// Get a class by ID
+exports.getClassById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const classItem = await classModel.findOne({
+      _id: id,
+      schoolId: req.user.schoolId
+    });
 
+    if (!classItem) {
+      return res.status(404).json({
+        success: false,
+        message: "Class not found"
+      });
+    }
+
+    // Convert sections and subjects from arrays to comma-separated strings
+    const formattedClass = {
+      ...classItem._doc,
+      sections: classItem.sections.join(', '),
+      subjects: classItem.subjects.join(', ')
+    };
+
+    res.status(200).json({
+      success: true,
+      message: "Class fetched successfully",
+      class: formattedClass
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Class not fetched due to an error",
+      error: error.message
+    });
+  }
+};
+
+// Update a class
 exports.updateClass = async (req, res) => {
   try {
     let { className, sections, subjects } = req.body;
@@ -2434,8 +2471,7 @@ exports.updateClass = async (req, res) => {
   }
 };
 
-
-
+// Delete a class
 exports.deleteClass = async (req, res) => {
   try {
     const { id } = req.params;
@@ -2463,6 +2499,7 @@ exports.deleteClass = async (req, res) => {
     });
   }
 };
+
 
 
 exports.getAllStudentStatus = async (req, res) => {
