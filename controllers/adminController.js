@@ -2368,10 +2368,17 @@ exports.getAllClasses = async (req, res) => {
       schoolId: req.user.schoolId
     });
 
+    // Convert sections and subjects from arrays to comma-separated strings
+    const formattedClassList = classList.map(classItem => ({
+      ...classItem._doc,
+      sections: classItem.sections.join(', '),
+      subjects: classItem.subjects.join(', ')
+    }));
+
     res.status(200).json({
       success: true,
       message: "Class list fetched successfully",
-      classList
+      classList: formattedClassList
     });
   } catch (error) {
     res.status(500).json({
@@ -2381,6 +2388,7 @@ exports.getAllClasses = async (req, res) => {
     });
   }
 };
+
 
 exports.updateClass = async (req, res) => {
   try {
@@ -2427,6 +2435,7 @@ exports.updateClass = async (req, res) => {
 };
 
 
+
 exports.deleteClass = async (req, res) => {
   try {
     const { id } = req.params;
@@ -2454,7 +2463,6 @@ exports.deleteClass = async (req, res) => {
     });
   }
 };
-
 
 
 exports.getAllStudentStatus = async (req, res) => {
