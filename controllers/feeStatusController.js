@@ -362,6 +362,123 @@ async function getMonthlyFeeForClass(schoolId, className) {
     }
 }
 
+// exports.createOrUpdateFeePayment = async (req, res) => {
+//     try {
+//         const { admissionNumber, feeHistory, className } = req.body;
+//         const schoolId = req.user.schoolId;
+//         const year = new Date().getFullYear(); // Get the current year dynamically
+
+//         // Fetch the monthly fee for the class dynamically from the database
+//         const monthlyFee = await getMonthlyFeeForClass(schoolId, className);
+
+//         // Debugging logs
+//         console.log(`Monthly fee for class ${className}: ${monthlyFee}`);
+
+//         const existingFeePayment = await FeeStatus.findOne({
+//             schoolId,
+//             admissionNumber,
+//             year,
+//         });
+
+//         // Check for duplicate months in fee history
+//         if (existingFeePayment) {
+//             const existingMonths = existingFeePayment.feeHistory.map(entry => entry.month);
+//             const duplicateMonths = feeHistory.filter(entry => existingMonths.includes(entry.month));
+
+//             if (duplicateMonths.length > 0) {
+//                 return res.status(400).json({
+//                     success: false,
+//                     message: `Fee for month(s) ${duplicateMonths.map(entry => entry.month).join(', ')} already exists for the year ${year}`,
+//                 });
+//             }
+//         }
+
+//         // Generate unique fee receipt numbers for each fee history entry
+//         feeHistory.forEach(entry => {
+//             entry.feeReceiptNumber = generateUniqueFeeReceiptNumber();
+//         });
+
+//         if (existingFeePayment) {
+//             // Add the new fee history entries and update monthly dues
+//             feeHistory.forEach(entry => {
+//                 existingFeePayment.feeHistory.push(entry);
+//                 let monthlyDue = existingFeePayment.monthlyDues.find(due => due.month === entry.month);
+//                 if (monthlyDue) {
+//                     monthlyDue.dueAmount -= entry.paidAmount;
+//                 } else {
+//                     existingFeePayment.monthlyDues.push({
+//                         month: entry.month,
+//                         dueAmount: monthlyFee - entry.paidAmount
+//                     });
+//                 }
+//             });
+
+//             // Ensure monthly dues are correct for all months
+//             let monthlyDuesMap = {};
+//             existingFeePayment.feeHistory.forEach(entry => {
+//                 if (!monthlyDuesMap[entry.month]) {
+//                     monthlyDuesMap[entry.month] = monthlyFee;
+//                 }
+//                 monthlyDuesMap[entry.month] -= entry.paidAmount;
+//             });
+
+//             existingFeePayment.monthlyDues = Object.keys(monthlyDuesMap).map(month => ({
+//                 month: month,
+//                 dueAmount: monthlyDuesMap[month]
+//             }));
+
+//             // Recalculate the total dues
+//             existingFeePayment.dues = existingFeePayment.monthlyDues.reduce((acc, due) => acc + due.dueAmount, 0);
+
+//             const updatedFeePayment = await existingFeePayment.save();
+//             res.status(201).json({
+//                 success: true,
+//                 message: "Fee Status is Saved Successfully",
+//                 data: updatedFeePayment
+//             });
+//         } else {
+//             const newFeePayment = new FeeStatus({
+//                 schoolId,
+//                 admissionNumber,
+//                 year,
+//                 dues: 0,
+//                 feeHistory,
+//                 monthlyDues: []
+//             });
+
+//             // Calculate the initial dues based on the fee history
+//             let monthlyDuesMap = {};
+//             feeHistory.forEach(entry => {
+//                 if (!monthlyDuesMap[entry.month]) {
+//                     monthlyDuesMap[entry.month] = monthlyFee;
+//                 }
+//                 monthlyDuesMap[entry.month] -= entry.paidAmount;
+//             });
+
+//             newFeePayment.monthlyDues = Object.keys(monthlyDuesMap).map(month => ({
+//                 month: month,
+//                 dueAmount: monthlyDuesMap[month]
+//             }));
+
+//             // Calculate the total dues
+//             newFeePayment.dues = newFeePayment.monthlyDues.reduce((acc, due) => acc + due.dueAmount, 0);
+
+//             const savedFeePayment = await newFeePayment.save();
+//             res.status(201).json({
+//                 success: true,
+//                 message: "Fee Status is Saved Successfully",
+//                 data: savedFeePayment
+//             });
+//         }
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: "Fee Status is not created Successfully",
+//             error: error.message
+//         });
+//     }
+// };
+
 exports.createOrUpdateFeePayment = async (req, res) => {
     try {
         const { admissionNumber, feeHistory, className } = req.body;
@@ -396,6 +513,7 @@ exports.createOrUpdateFeePayment = async (req, res) => {
         // Generate unique fee receipt numbers for each fee history entry
         feeHistory.forEach(entry => {
             entry.feeReceiptNumber = generateUniqueFeeReceiptNumber();
+            entry.date = new Date(); // Add the current timestamp
         });
 
         if (existingFeePayment) {
@@ -548,6 +666,57 @@ exports.feeIncomeMonths = async (req, res) => {
 }
 
 
+// exports.getFeeHistory = async (req, res) => {
+//     try {
+//         const { admissionNumber } = req.query;
+
+//         let filter = {
+//             schoolId: req.user.schoolId,
+//             ...(admissionNumber ? { admissionNumber: admissionNumber } : {})
+//         };
+
+//         const feeStatusData = await FeeStatus.find(filter).exec();
+
+//         let feeHistory = [];
+//         for (const feeStatus of feeStatusData) {
+//             const studentData = await NewStudentModel.findOne({ admissionNumber: feeStatus.admissionNumber }, 'fullName class admissionNumber').exec();
+
+//             // Check if studentData exists before using it
+//             if (studentData) {
+//                 feeStatus.feeHistory.forEach(history => {
+//                     const monthDue = feeStatus.monthlyDues.find(md => md.month === history.month);
+//                     feeHistory.push({
+//                         admissionNumber: studentData.admissionNumber,
+//                         studentName: studentData.fullName,
+//                         studentClass: studentData.class,
+//                         feeReceiptNumber: history.feeReceiptNumber,
+//                         paymentMode: history.paymentMode,
+//                         dues: monthDue ? monthDue.dueAmount : 0, // Get dues for the specific month
+//                         ...history._doc
+//                     });
+//                 });
+//             } else {
+//                 console.error(`Student with admissionNumber ${feeStatus.admissionNumber} not found`);
+//             }
+//         }
+
+//         // Sort fee history by date in descending order
+//         feeHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+//         res.status(200).json({
+//             success: true,
+//             message: "Fee history retrieved successfully",
+//             data: feeHistory,
+//         });
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: "Failed to retrieve fee history",
+//             error: error.message,
+//         });
+//     }
+// };
+
 exports.getFeeHistory = async (req, res) => {
     try {
         const { admissionNumber } = req.query;
@@ -582,7 +751,7 @@ exports.getFeeHistory = async (req, res) => {
             }
         }
 
-        // Sort fee history by date in descending order
+        // Sort the entire feeHistory by date in descending order
         feeHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         res.status(200).json({
