@@ -1395,6 +1395,12 @@ exports.createStudentParent = async (req, res) => {
       parentContact,
       parentIncome,
       parentQualification,
+      religion,
+      caste,
+      nationality,
+      pincode,
+      state,
+      city
     } = req.body;
 
     if (!studentEmail || !studentPassword || !parentEmail || !parentPassword) {
@@ -1455,6 +1461,12 @@ exports.createStudentParent = async (req, res) => {
       country: studentCountry,
       subject: studentSubject,
       admissionNumber: studentAdmissionNumber,
+      religion: religion,
+      caste: caste,
+      nationality: nationality,
+      pincode: pincode,
+      state: state,
+      city: city,
       image: {
         public_id: studentImageResult.public_id,
         url: studentImageResult.secure_url,
