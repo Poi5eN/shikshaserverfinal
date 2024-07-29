@@ -182,8 +182,156 @@
 // };
 
 
+// const FeeStatus = require("../models/feeStatus");
+// const NewStudentModel = require("../models/newStudentModel");
+// const FeeStructure = require("../models/feeStructureModel");
+
+// // Utility function to generate unique fee receipt number
+// function generateUniqueFeeReceiptNumber() {
+//     const characters = 'ABC0123456789';
+//     let result = '';
+//     for (let i = 0; i < 5; i++) {
+//         result += characters.charAt(Math.floor(Math.random() * characters.length));
+//     }
+//     return result;
+// }
+
+// // Placeholder function to fetch the monthly fee for a class
+// async function getMonthlyFeeForClass(schoolId, className) {
+//     try {
+//         const feeStructure = await FeeStructure.findOne({
+//             schoolId: schoolId,
+//             className: className,
+//             additional: false // Assuming 'additional' field distinguishes monthly fees from other fees
+//         });
+
+//         if (!feeStructure) {
+//             throw new Error(`Fee structure for class ${className} not found`);
+//         }
+
+//         return feeStructure.amount;
+//     } catch (error) {
+//         throw new Error(`Failed to fetch monthly fee for class ${className}: ${error.message}`);
+//     }
+// }
+
+// exports.createOrUpdateFeePayment = async (req, res) => {
+//     try {
+//         const { admissionNumber, feeHistory, className } = req.body;
+//         const schoolId = req.user.schoolId;
+//         const year = new Date().getFullYear(); // Get the current year dynamically
+
+//         // Fetch the monthly fee for the class
+//         const monthlyFee = await getMonthlyFeeForClass(className);
+
+//         const existingFeePayment = await FeeStatus.findOne({
+//             schoolId,
+//             admissionNumber,
+//             year,
+//         });
+
+//         // Check for duplicate months in fee history
+//         if (existingFeePayment) {
+//             const existingMonths = existingFeePayment.feeHistory.map(entry => entry.month);
+//             const duplicateMonths = feeHistory.filter(entry => existingMonths.includes(entry.month));
+
+//             if (duplicateMonths.length > 0) {
+//                 return res.status(400).json({
+//                     success: false,
+//                     message: `Fee for month(s) ${duplicateMonths.map(entry => entry.month).join(', ')} already exists for the year ${year}`,
+//                 });
+//             }
+//         }
+
+//         // Generate unique fee receipt numbers for each fee history entry
+//         feeHistory.forEach(entry => {
+//             entry.feeReceiptNumber = generateUniqueFeeReceiptNumber();
+//         });
+
+//         if (existingFeePayment) {
+//             // Add the new fee history entries and update monthly dues
+//             feeHistory.forEach(entry => {
+//                 existingFeePayment.feeHistory.push(entry);
+//                 let monthlyDue = existingFeePayment.monthlyDues.find(due => due.month === entry.month);
+//                 if (monthlyDue) {
+//                     monthlyDue.dueAmount -= entry.paidAmount;
+//                 } else {
+//                     existingFeePayment.monthlyDues.push({
+//                         month: entry.month,
+//                         dueAmount: monthlyFee - entry.paidAmount
+//                     });
+//                 }
+//             });
+
+//             // Ensure monthly dues are correct for all months
+//             let monthlyDuesMap = {};
+//             existingFeePayment.feeHistory.forEach(entry => {
+//                 if (!monthlyDuesMap[entry.month]) {
+//                     monthlyDuesMap[entry.month] = monthlyFee;
+//                 }
+//                 monthlyDuesMap[entry.month] -= entry.paidAmount;
+//             });
+
+//             existingFeePayment.monthlyDues = Object.keys(monthlyDuesMap).map(month => ({
+//                 month: month,
+//                 dueAmount: monthlyDuesMap[month]
+//             }));
+
+//             // Recalculate the total dues
+//             existingFeePayment.dues = existingFeePayment.monthlyDues.reduce((acc, due) => acc + due.dueAmount, 0);
+
+//             const updatedFeePayment = await existingFeePayment.save();
+//             res.status(201).json({
+//                 success: true,
+//                 message: "Fee Status is Saved Successfully",
+//                 data: updatedFeePayment
+//             });
+//         } else {
+//             const newFeePayment = new FeeStatus({
+//                 schoolId,
+//                 admissionNumber,
+//                 year,
+//                 dues: 0,
+//                 feeHistory,
+//                 monthlyDues: []
+//             });
+
+//             // Calculate the initial dues based on the fee history
+//             let monthlyDuesMap = {};
+//             feeHistory.forEach(entry => {
+//                 if (!monthlyDuesMap[entry.month]) {
+//                     monthlyDuesMap[entry.month] = monthlyFee;
+//                 }
+//                 monthlyDuesMap[entry.month] -= entry.paidAmount;
+//             });
+
+//             newFeePayment.monthlyDues = Object.keys(monthlyDuesMap).map(month => ({
+//                 month: month,
+//                 dueAmount: monthlyDuesMap[month]
+//             }));
+
+//             // Calculate the total dues
+//             newFeePayment.dues = newFeePayment.monthlyDues.reduce((acc, due) => acc + due.dueAmount, 0);
+
+//             const savedFeePayment = await newFeePayment.save();
+//             res.status(201).json({
+//                 success: true,
+//                 message: "Fee Status is Saved Successfully",
+//                 data: savedFeePayment
+//             });
+//         }
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: "Fee Status is not created Successfully",
+//             error: error.message
+//         });
+//     }
+// };
+
 const FeeStatus = require("../models/feeStatus");
 const NewStudentModel = require("../models/newStudentModel");
+const FeeStructure = require("../models/feeStructureModel");
 
 // Utility function to generate unique fee receipt number
 function generateUniqueFeeReceiptNumber() {
@@ -195,17 +343,24 @@ function generateUniqueFeeReceiptNumber() {
     return result;
 }
 
-// Placeholder function to fetch the monthly fee for a class
-// async function getMonthlyFeeForClass(className) {
-//     // Implement the logic to fetch the monthly fee for the class, e.g., from another API
-//     // Here, we use a fixed value for demonstration purposes
-//     const fees = {
-//         "classA": 1000,
-//         "classB": 1200,
-//         // Add other classes as needed
-//     };
-//     return fees[className] || 1000; // Default to 1000 if class not found
-// }
+// Function to fetch the monthly fee for a class dynamically from the database
+async function getMonthlyFeeForClass(schoolId, className) {
+    try {
+        const feeStructure = await FeeStructure.findOne({
+            schoolId: schoolId,
+            className: className,
+            additional: false // Assuming 'additional' field distinguishes monthly fees from other fees
+        });
+
+        if (!feeStructure) {
+            throw new Error(`Fee structure for class ${className} not found`);
+        }
+
+        return feeStructure.amount;
+    } catch (error) {
+        throw new Error(`Failed to fetch monthly fee for class ${className}: ${error.message}`);
+    }
+}
 
 exports.createOrUpdateFeePayment = async (req, res) => {
     try {
@@ -213,8 +368,11 @@ exports.createOrUpdateFeePayment = async (req, res) => {
         const schoolId = req.user.schoolId;
         const year = new Date().getFullYear(); // Get the current year dynamically
 
-        // Fetch the monthly fee for the class
-        const monthlyFee = await getMonthlyFeeForClass(className);
+        // Fetch the monthly fee for the class dynamically from the database
+        const monthlyFee = await getMonthlyFeeForClass(schoolId, className);
+
+        // Debugging logs
+        console.log(`Monthly fee for class ${className}: ${monthlyFee}`);
 
         const existingFeePayment = await FeeStatus.findOne({
             schoolId,
@@ -320,6 +478,7 @@ exports.createOrUpdateFeePayment = async (req, res) => {
         });
     }
 };
+
 
 
 exports.getFeeStatus = async (req, res) => {
