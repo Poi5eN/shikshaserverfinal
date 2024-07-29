@@ -582,6 +582,9 @@ exports.getFeeHistory = async (req, res) => {
             }
         }
 
+        // Sort fee history by date in descending order
+        feeHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+
         res.status(200).json({
             success: true,
             message: "Fee history retrieved successfully",
@@ -595,6 +598,7 @@ exports.getFeeHistory = async (req, res) => {
         });
     }
 };
+
 
 
 
