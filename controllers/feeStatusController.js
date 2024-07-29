@@ -196,16 +196,16 @@ function generateUniqueFeeReceiptNumber() {
 }
 
 // Placeholder function to fetch the monthly fee for a class
-async function getMonthlyFeeForClass(className) {
-    // Implement the logic to fetch the monthly fee for the class, e.g., from another API
-    // Here, we use a fixed value for demonstration purposes
-    const fees = {
-        "classA": 1000,
-        "classB": 1200,
-        // Add other classes as needed
-    };
-    return fees[className] || 1000; // Default to 1000 if class not found
-}
+// async function getMonthlyFeeForClass(className) {
+//     // Implement the logic to fetch the monthly fee for the class, e.g., from another API
+//     // Here, we use a fixed value for demonstration purposes
+//     const fees = {
+//         "classA": 1000,
+//         "classB": 1200,
+//         // Add other classes as needed
+//     };
+//     return fees[className] || 1000; // Default to 1000 if class not found
+// }
 
 exports.createOrUpdateFeePayment = async (req, res) => {
     try {
