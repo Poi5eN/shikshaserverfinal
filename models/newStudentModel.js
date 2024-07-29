@@ -102,6 +102,24 @@ const studentSchema = new mongoose.Schema({
         required: true,
         match: /^[A-Z]{3}\d{3}$/
     },
+    religion: {
+        type: String
+    },
+    caste: {
+        type: String
+    },
+    nationality: {
+        type: String
+    },
+    pincode: {
+        type: String
+    },
+    state: {
+        type: String
+    },
+    city: {
+        type: String
+    },
     createdAt: {
         type: Date,
         default: Date.now()
