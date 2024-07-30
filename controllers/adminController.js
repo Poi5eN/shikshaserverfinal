@@ -20,6 +20,7 @@ const NewRegistrationModel = require("../models/newRegistrationModel");
 const NewStudentModel = require("../models/newStudentModel");
 const ParentModel = require("../models/parentModel");
 const EmployeeModel = require("../models/employeeModel");
+const FeeStatus = require("../models/feeStatus");
 // const classModel = require("../models/classModel");
 const classModel = require("../models/classModel");
 const NoticeModel = require("../models/noticeModel");
@@ -1564,8 +1565,9 @@ exports.getDataByAdmissionNumber = async (req, res) => {
 
     const studentData = await NewStudentModel.findOne({ admissionNumber });
     const parentData = await ParentModel.findOne({ admissionNumber });
+    const feeStatusData = await FeeStatus.findOne({ admissionNumber });
 
-    if (!studentData && !parentData) {
+    if (!studentData && !parentData && !feeStatusData) {
       return res.status(404).json({
         success: false,
         message: "No data found with this admission number",
@@ -1576,6 +1578,7 @@ exports.getDataByAdmissionNumber = async (req, res) => {
       success: true,
       studentData,
       parentData,
+      feeStatusData, // Add the fee status data to the response
     });
   } catch (error) {
     res.status(500).json({
