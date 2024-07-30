@@ -59,7 +59,7 @@ const studentSchema = new mongoose.Schema({
     },
     "gender": {
         type: String,
-        required: true
+        // required: true
     },
     "joiningDate": {
         type: String,
@@ -67,11 +67,11 @@ const studentSchema = new mongoose.Schema({
     },
     "address": {
         type: String,
-        required: true
+        // required: true
     },
     "contact": {
         type: Number,
-        required: true
+        // required: true
     },
     "class": {
         type: String,
@@ -83,17 +83,17 @@ const studentSchema = new mongoose.Schema({
     },
     "country": {
         type: String,
-        required: true,
+        // required: true,
     },
     "subject": [String],
     "image": {
         public_id: {
             type: String,
-            required: true
+            // required: true
         },
         url: {
             type: String,
-            required: true
+            // required: true
         }
     },
     admissionNumber: {
