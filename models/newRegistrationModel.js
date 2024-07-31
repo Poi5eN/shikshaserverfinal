@@ -28,7 +28,7 @@ const newRegistrationSchema = new mongoose.Schema({
   mobileNumber: {
     type: Number,
     required: true,
-    unique: true,
+    // unique: true,
     trim: true,
   },
   studentEmail: {
