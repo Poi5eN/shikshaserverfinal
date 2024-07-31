@@ -42,7 +42,7 @@ router.put('/updateItem/:itemId', verifyToken, admin.updateItem);
 
 // POST route for creating registration
 router.post('/createRegistration', verifyToken, uploads, admin.createRegistration);
-router.post('/createBulkRegistrations', verifyToken, uploads, admin.createBulkRegistrations);
+// router.post('/createBulkRegistrations', verifyToken, uploads, admin.createBulkRegistrations);
 // GET route for fetching all registrations
 router.get('/getRegistrations', verifyToken, uploads, admin.getRegistrations);
 // GET route for fetching a specific registration by ID
