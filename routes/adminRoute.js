@@ -49,6 +49,7 @@ router.get('/getRegistrations', verifyToken, uploads, admin.getRegistrations);
 // router.get('/getRegistration/:id', verifyToken, uploads, admin.getRegistrationById);
 router.get('/getRegistration/:registrationNumber', verifyToken, uploads, admin.getRegistrationByNumber);
 router.post('/createStudentParent', verifyToken, uploads, admin.createStudentParent);
+router.post('/createBulkStudentParent', verifyToken, uploads, admin.createBulkStudentParent);
 router.get('/getDataByAdmissionNumber/:admissionNumber', verifyToken, uploads, admin.getDataByAdmissionNumber);
 router.put('/updateParent', verifyToken, singleUpload, admin.updateParent);
 router.put('/deactivateParent', verifyToken, admin.deactivateParent);
