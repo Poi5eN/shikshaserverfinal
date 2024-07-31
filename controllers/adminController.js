@@ -1713,157 +1713,157 @@ exports.createStudentParent = async (req, res) => {
 
 
 // START OF ADDED BULK ADMISSION
-exports.createBulkStudentParent = async (req, res) => {
-  try {
-    const registrations = req.body.registrations;
+// exports.createBulkStudentParent = async (req, res) => {
+//   try {
+//     const registrations = req.body.registrations;
 
-    if (!registrations || !Array.isArray(registrations)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid data format. Expected an array of registrations.",
-      });
-    }
+//     if (!registrations || !Array.isArray(registrations)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid data format. Expected an array of registrations.",
+//       });
+//     }
 
-    const bulkOperations = registrations.map(async (registration) => {
-      const {
-        studentFullName,
-        studentEmail,
-        studentPassword,
-        studentDateOfBirth,
-        studentRollNo,
-        studentGender,
-        studentJoiningDate,
-        studentAddress,
-        studentContact,
-        studentClass,
-        studentSection,
-        studentCountry,
-        studentSubject,
-        fatherName,
-        motherName,
-        parentEmail,
-        parentPassword,
-        parentContact,
-        parentIncome,
-        parentQualification,
-        religion,
-        caste,
-        nationality,
-        pincode,
-        state,
-        city,
-      } = registration;
+//     const bulkOperations = registrations.map(async (registration) => {
+//       const {
+//         studentFullName,
+//         studentEmail,
+//         studentPassword,
+//         studentDateOfBirth,
+//         studentRollNo,
+//         studentGender,
+//         studentJoiningDate,
+//         studentAddress,
+//         studentContact,
+//         studentClass,
+//         studentSection,
+//         studentCountry,
+//         studentSubject,
+//         fatherName,
+//         motherName,
+//         parentEmail,
+//         parentPassword,
+//         parentContact,
+//         parentIncome,
+//         parentQualification,
+//         religion,
+//         caste,
+//         nationality,
+//         pincode,
+//         state,
+//         city,
+//       } = registration;
 
-      if (!studentEmail || !studentPassword || !parentEmail || !parentPassword) {
-        throw new Error("Missing required data in one or more entries.");
-      }
+//       if (!studentEmail || !studentPassword || !parentEmail || !parentPassword) {
+//         throw new Error("Missing required data in one or more entries.");
+//       }
 
-      const studentExist = await NewStudentModel.findOne({ email: studentEmail });
-      const parentExist = await ParentModel.findOne({ email: parentEmail });
-      if (studentExist || parentExist) {
-        throw new Error(`Already exist with email: ${studentEmail} or ${parentEmail}`);
-      }
+//       const studentExist = await NewStudentModel.findOne({ email: studentEmail });
+//       const parentExist = await ParentModel.findOne({ email: parentEmail });
+//       if (studentExist || parentExist) {
+//         throw new Error(`Already exist with email: ${studentEmail} or ${parentEmail}`);
+//       }
 
-      const studentHashPassword = await hashPassword(studentPassword);
-      const parentHashPassword = await hashPassword(parentPassword);
+//       const studentHashPassword = await hashPassword(studentPassword);
+//       const parentHashPassword = await hashPassword(parentPassword);
 
-      const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
-      const parentAdmissionNumber = await generateAdmissionNumber(ParentModel);
+//       const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
+//       const parentAdmissionNumber = await generateAdmissionNumber(ParentModel);
 
-      const studentFileUri = getDataUri(registration.studentFile);
-      const parentFileUri = getDataUri(registration.parentFile);
+//       const studentFileUri = getDataUri(registration.studentFile);
+//       const parentFileUri = getDataUri(registration.parentFile);
 
-      const studentImageResult = await cloudinary.uploader.upload(studentFileUri.content);
-      const parentImageResult = await cloudinary.uploader.upload(parentFileUri.content);
+//       const studentImageResult = await cloudinary.uploader.upload(studentFileUri.content);
+//       const parentImageResult = await cloudinary.uploader.upload(parentFileUri.content);
 
-      const studentData = {
-        schoolId: req.user.schoolId,
-        fullName: studentFullName,
-        email: studentEmail,
-        password: studentHashPassword,
-        dateOfBirth: studentDateOfBirth,
-        rollNo: studentRollNo,
-        gender: studentGender,
-        joiningDate: studentJoiningDate,
-        address: studentAddress,
-        contact: studentContact,
-        class: studentClass,
-        section: studentSection,
-        country: studentCountry,
-        subject: studentSubject,
-        admissionNumber: studentAdmissionNumber,
-        religion,
-        caste,
-        nationality,
-        pincode,
-        state,
-        city,
-        image: {
-          public_id: studentImageResult.public_id,
-          url: studentImageResult.secure_url,
-        },
-      };
+//       const studentData = {
+//         schoolId: req.user.schoolId,
+//         fullName: studentFullName,
+//         email: studentEmail,
+//         password: studentHashPassword,
+//         dateOfBirth: studentDateOfBirth,
+//         rollNo: studentRollNo,
+//         gender: studentGender,
+//         joiningDate: studentJoiningDate,
+//         address: studentAddress,
+//         contact: studentContact,
+//         class: studentClass,
+//         section: studentSection,
+//         country: studentCountry,
+//         subject: studentSubject,
+//         admissionNumber: studentAdmissionNumber,
+//         religion,
+//         caste,
+//         nationality,
+//         pincode,
+//         state,
+//         city,
+//         image: {
+//           public_id: studentImageResult.public_id,
+//           url: studentImageResult.secure_url,
+//         },
+//       };
 
-      const parentData = {
-        schoolId: req.user.schoolId,
-        studentName: studentFullName,
-        fullName: fatherName,
-        motherName,
-        email: parentEmail,
-        password: parentHashPassword,
-        contact: parentContact,
-        admissionNumber: parentAdmissionNumber,
-        income: parentIncome,
-        qualification: parentQualification,
-        image: {
-          public_id: parentImageResult.public_id,
-          url: parentImageResult.secure_url,
-        },
-      };
+//       const parentData = {
+//         schoolId: req.user.schoolId,
+//         studentName: studentFullName,
+//         fullName: fatherName,
+//         motherName,
+//         email: parentEmail,
+//         password: parentHashPassword,
+//         contact: parentContact,
+//         admissionNumber: parentAdmissionNumber,
+//         income: parentIncome,
+//         qualification: parentQualification,
+//         image: {
+//           public_id: parentImageResult.public_id,
+//           url: parentImageResult.secure_url,
+//         },
+//       };
 
-      return { studentData, parentData };
-    });
+//       return { studentData, parentData };
+//     });
 
-    // Execute all operations
-    const results = await Promise.all(bulkOperations);
+//     // Execute all operations
+//     const results = await Promise.all(bulkOperations);
 
-    // Save all student and parent data
-    for (const { studentData, parentData } of results) {
-      const createdStudent = await NewStudentModel.create(studentData);
-      const createdParent = await ParentModel.create({
-        ...parentData,
-        studentId: createdStudent._id,
-      });
+//     // Save all student and parent data
+//     for (const { studentData, parentData } of results) {
+//       const createdStudent = await NewStudentModel.create(studentData);
+//       const createdParent = await ParentModel.create({
+//         ...parentData,
+//         studentId: createdStudent._id,
+//       });
 
-      createdStudent.parentId = createdParent._id;
-      await createdStudent.save();
+//       createdStudent.parentId = createdParent._id;
+//       await createdStudent.save();
 
-      // Send emails
-      const studentEmailContent = `
-        <p>Your EmailID: ${studentData.email}</p>
-        <p>Your Password: ${studentData.password}</p>
-      `;
-      const parentEmailContent = `
-        <p>Your EmailID: ${parentData.email}</p>
-        <p>Your Password: ${parentData.password}</p>
-      `;
+//       // Send emails
+//       const studentEmailContent = `
+//         <p>Your EmailID: ${studentData.email}</p>
+//         <p>Your Password: ${studentData.password}</p>
+//       `;
+//       const parentEmailContent = `
+//         <p>Your EmailID: ${parentData.email}</p>
+//         <p>Your Password: ${parentData.password}</p>
+//       `;
 
-      await sendEmail(studentData.email, "Student Login Credentials", studentEmailContent);
-      await sendEmail(parentData.email, "Parent Login Credentials", parentEmailContent);
-    }
+//       await sendEmail(studentData.email, "Student Login Credentials", studentEmailContent);
+//       await sendEmail(parentData.email, "Parent Login Credentials", parentEmailContent);
+//     }
 
-    res.status(201).json({
-      success: true,
-      message: "Students and Parents registered successfully.",
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Bulk registration failed due to an error.",
-      error: error.message,
-    });
-  }
-};
+//     res.status(201).json({
+//       success: true,
+//       message: "Students and Parents registered successfully.",
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: "Bulk registration failed due to an error.",
+//       error: error.message,
+//     });
+//   }
+// };
 // END OF ADDED BULK ADMISSION
 
 exports.getDataByAdmissionNumber = async (req, res) => {
