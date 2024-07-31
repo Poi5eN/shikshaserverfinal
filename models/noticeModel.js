@@ -25,11 +25,11 @@ const noticeSchema = new mongoose.Schema({
     file: {
         public_id: {
             type: String,
-            required: true
+            // required: true
         },
         url: {
             type: String,
-            required: true
+            // required: true
         }
     }
 });
