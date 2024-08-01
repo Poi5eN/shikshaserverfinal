@@ -25,6 +25,7 @@
     "nodemailer": "^6.9.4",
     "nodemon": "^3.0.1",
     "readable-stream": "^4.4.2",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "xlsx": "^0.18.5"
   }
 }

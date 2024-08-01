@@ -8,23 +8,12 @@
 
 // TRYING SOLUTION CODE START
 const multer = require('multer');
-const path = require('path');
-
-// Disk storage configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Directory for storing files
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // Adding timestamp to the file name
-  }
-});
+const storage = multer.memoryStorage();
 
 const singleUpload = multer({ storage }).single('image');
 const uploads = multer({ storage }).any();
 
 module.exports = { singleUpload, uploads };
-
 
 // TRYING SOLUTION CODE END
 
