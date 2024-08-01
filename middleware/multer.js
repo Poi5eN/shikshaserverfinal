@@ -20,15 +20,11 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage });
+const singleUpload = multer({ storage }).single('image');
+const uploads = multer({ storage }).any();
 
-// Middleware to handle single file uploads
-const singleUpload = upload.single('image');
+module.exports = { singleUpload, uploads };
 
-// Middleware to handle multiple files uploads
-const multipleUpload = upload.any();
-
-module.exports = { singleUpload, multipleUpload };
 
 // TRYING SOLUTION CODE END
 

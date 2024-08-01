@@ -1867,11 +1867,11 @@ const generateAdmissionNumber = async (Model) => {
 // END OF ADDED BULK ADMISSION
 
 // TRYING ADMISSION START NEW
-// const { multipleUpload } = require('./path/to/multer/config');
+// const { uploads } = require('./path/to/multer/config');
 
 exports.createStudentParent = async (req, res) => {
   try {
-    multipleUpload(req, res, async (err) => {
+    uploads(req, res, async (err) => {
       if (err) {
         return res.status(500).json({
           success: false,
@@ -2064,11 +2064,11 @@ exports.createStudentParent = async (req, res) => {
   }
 };
 
-// const { multipleUpload } = require('./path/to/multer/config');
+// const { uploads } = require('./path/to/multer/config');
 
 exports.createBulkStudentParent = async (req, res) => {
   try {
-    multipleUpload(req, res, async (err) => {
+    uploads(req, res, async (err) => {
       if (err) {
         return res.status(500).json({
           success: false,
@@ -2186,10 +2186,8 @@ exports.createBulkStudentParent = async (req, res) => {
         return { studentData, parentData };
       });
 
-      // Execute all operations
       const results = await Promise.all(bulkOperations);
 
-      // Save all student and parent data
       for (const { studentData, parentData } of results) {
         const createdStudent = await NewStudentModel.create(studentData);
         const createdParent = await ParentModel.create({
@@ -2200,7 +2198,6 @@ exports.createBulkStudentParent = async (req, res) => {
         createdStudent.parentId = createdParent._id;
         await createdStudent.save();
 
-        // Send emails
         const studentEmailContent = `
           <p>Your EmailID: ${studentData.email}</p>
           <p>Your Password: ${studentData.password}</p>

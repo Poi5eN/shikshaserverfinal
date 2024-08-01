@@ -1,7 +1,7 @@
 const {Router} = require('express')
 const router = Router()
 const admin = require('../controllers/adminController')
-const {singleUpload, uploads, multipleUpload} = require('../middleware/multer')
+const {singleUpload, uploads} = require('../middleware/multer')
 const verifyToken = require('../middleware/auth')
 
 console.log('Admin routes loaded'); // Add this line
@@ -48,8 +48,8 @@ router.get('/getRegistrations', verifyToken, uploads, admin.getRegistrations);
 // GET route for fetching a specific registration by ID
 // router.get('/getRegistration/:id', verifyToken, uploads, admin.getRegistrationById);
 router.get('/getRegistration/:registrationNumber', verifyToken, uploads, admin.getRegistrationByNumber);
-router.post('/createStudentParent', verifyToken, multipleUpload, admin.createStudentParent);
-router.post('/createBulkStudentParent', verifyToken, multipleUpload, admin.createBulkStudentParent);
+router.post('/createStudentParent', verifyToken, uploads, admin.createStudentParent);
+router.post('/createBulkStudentParent', verifyToken, uploads, admin.createBulkStudentParent);
 router.get('/getDataByAdmissionNumber/:admissionNumber', verifyToken, uploads, admin.getDataByAdmissionNumber);
 router.put('/updateParent', verifyToken, singleUpload, admin.updateParent);
 router.put('/deactivateParent', verifyToken, admin.deactivateParent);
