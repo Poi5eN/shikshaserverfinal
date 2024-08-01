@@ -2056,20 +2056,16 @@ exports.createStudentParent = async (req, res) => {
 };
 exports.createBulkStudentParent = async (req, res) => {
   try {
-    if (!req.files || req.files.length === 0) {
+    const { registrations } = req.body;
+
+    if (!registrations || !Array.isArray(registrations)) {
       return res.status(400).json({
         success: false,
-        message: 'No files uploaded',
+        message: "Invalid data format",
       });
     }
 
-    const file = req.files[0];
-    const workbook = xlsx.read(file.buffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
-
-    // Process worksheet data...
-    for (const record of worksheet) {
+    for (const record of registrations) {
       const {
         studentFullName,
         studentEmail,
@@ -2113,7 +2109,6 @@ exports.createBulkStudentParent = async (req, res) => {
       const studentHashPassword = await hashPassword(studentPassword);
       const parentHashPassword = await hashPassword(parentPassword);
 
-      // Determine the new roll number
       const maxRollNoStudent = await NewStudentModel.findOne({
         schoolId: req.user.schoolId,
         class: studentClass,
