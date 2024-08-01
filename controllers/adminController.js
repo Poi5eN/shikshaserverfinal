@@ -2068,6 +2068,7 @@ exports.createBulkStudentParent = async (req, res) => {
     const sheetName = workbook.SheetNames[0];
     const worksheet = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
+    // Process worksheet data...
     for (const record of worksheet) {
       const {
         studentFullName,
@@ -2098,10 +2099,7 @@ exports.createBulkStudentParent = async (req, res) => {
       } = record;
 
       if (!studentEmail || !studentPassword || !parentEmail || !parentPassword) {
-        return res.status(400).json({
-          success: false,
-          message: "Please Enter All required Data",
-        });
+        continue; // Skip record if essential data is missing
       }
 
       const studentExist = await NewStudentModel.findOne({ email: studentEmail });
@@ -2109,7 +2107,7 @@ exports.createBulkStudentParent = async (req, res) => {
       const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
 
       if (studentExist || parentExist) {
-        continue; // Skip the record if student or parent already exists
+        continue; // Skip record if student or parent already exists
       }
 
       const studentHashPassword = await hashPassword(studentPassword);
