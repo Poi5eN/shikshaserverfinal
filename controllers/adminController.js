@@ -2092,7 +2092,11 @@ exports.createBulkStudentParent = async (req, res) => {
         pincode,
         state,
         city,
+        image // Add image data if available
       } = record;
+
+      // Convert income to number if it's a valid number string
+      const parsedIncome = parseFloat(parentIncome.replace(/[^0-9.-]+/g, ''));
 
       if (!studentEmail || !studentPassword || !parentEmail || !parentPassword) {
         continue; // Skip record if essential data is missing
@@ -2147,6 +2151,12 @@ exports.createBulkStudentParent = async (req, res) => {
 
       const parentAdmissionNumber = await generateAdmissionNumber(ParentModel);
 
+      // Handle missing image data
+      const parentImage = image || {
+        public_id: null,
+        url: null,
+      };
+
       const parentData = await ParentModel.create({
         schoolId: req.user.schoolId,
         studentId: studentData._id,
@@ -2157,8 +2167,9 @@ exports.createBulkStudentParent = async (req, res) => {
         password: parentHashPassword,
         contact: parentContact,
         admissionNumber: parentAdmissionNumber,
-        income: parentIncome,
+        income: parsedIncome, // Use the parsed income
         qualification: parentQualification,
+        image: parentImage,
       });
 
       studentData.parentId = parentData._id;
@@ -2177,6 +2188,7 @@ exports.createBulkStudentParent = async (req, res) => {
     });
   }
 };
+
 
 
 // TRYING ADMISSION END NEW
