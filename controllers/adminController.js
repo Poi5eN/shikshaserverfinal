@@ -1980,8 +1980,8 @@ exports.createStudentParent = async (req, res) => {
     const studentFile = req.files[0];
     const parentFile = req.files[1];
 
-    const studentExist = await NewStudentModel.findOne({ email: studentEmail });
-    const parentExist = await ParentModel.findOne({ email: parentEmail });
+    const studentExist = await NewStudentModel.findOne({ email: studentEmail, schoolId: req.user.schoolId });
+    const parentExist = await ParentModel.findOne({ email: parentEmail, schoolId: req.user.schoolId });
     const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
 
     if (studentExist || parentExist) {
@@ -2172,8 +2172,8 @@ exports.createBulkStudentParent = async (req, res) => {
         continue; // Skip record if essential data is missing
       }
 
-      const studentExist = await NewStudentModel.findOne({ email: studentEmail });
-      const parentExist = await ParentModel.findOne({ email: parentEmail });
+      const studentExist = await NewStudentModel.findOne({ email: studentEmail, schoolId: req.user.schoolId });
+      const parentExist = await ParentModel.findOne({ email: parentEmail, schoolId: req.user.schoolId });
       const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
 
       if (studentExist || parentExist) {
