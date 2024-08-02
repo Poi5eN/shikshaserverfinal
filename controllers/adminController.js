@@ -2124,6 +2124,7 @@ exports.createStudentParent = async (req, res) => {
     });
   }
 };
+
 exports.createBulkStudentParent = async (req, res) => {
   try {
     const { registrations } = req.body;
@@ -2169,6 +2170,7 @@ exports.createBulkStudentParent = async (req, res) => {
       const parsedIncome = parseFloat(parentIncome.replace(/[^0-9.-]+/g, ''));
 
       if (!studentEmail || !studentPassword || !parentEmail || !parentPassword) {
+        console.log(`Skipping record due to missing essential data: ${JSON.stringify(record)}`);
         continue; // Skip record if essential data is missing
       }
 
@@ -2177,6 +2179,7 @@ exports.createBulkStudentParent = async (req, res) => {
       const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
 
       if (studentExist || parentExist) {
+        console.log(`Skipping record due to existing student or parent: ${JSON.stringify(record)}`);
         continue; // Skip record if student or parent already exists
       }
 
@@ -2219,6 +2222,8 @@ exports.createBulkStudentParent = async (req, res) => {
         city: city,
       });
 
+      console.log(`Student created: ${JSON.stringify(studentData)}`);
+
       const parentAdmissionNumber = await generateAdmissionNumber(ParentModel);
 
       // Handle missing image data
@@ -2242,6 +2247,8 @@ exports.createBulkStudentParent = async (req, res) => {
         image: parentImage,
       });
 
+      console.log(`Parent created: ${JSON.stringify(parentData)}`);
+
       studentData.parentId = parentData._id;
       await studentData.save();
     }
@@ -2251,6 +2258,7 @@ exports.createBulkStudentParent = async (req, res) => {
       message: "Bulk registration created successfully",
     });
   } catch (error) {
+    console.error(`Error during bulk registration: ${error.message}`);
     res.status(500).json({
       success: false,
       message: "Bulk registration failed",
@@ -2258,6 +2266,7 @@ exports.createBulkStudentParent = async (req, res) => {
     });
   }
 };
+
 
 
 
