@@ -12,7 +12,7 @@ const newRegistrationSchema = new mongoose.Schema({
   },
   guardianName: {
     type: String,
-    required: true,
+    // required: true,
     trim: true,
   },
   registerClass: {
@@ -22,24 +22,24 @@ const newRegistrationSchema = new mongoose.Schema({
   },
   studentAddress: {
     type: String,
-    required: true,
+    // required: true,
     trim: true,
   },
   mobileNumber: {
     type: Number,
-    required: true,
+    // required: true,
     // unique: true,
     trim: true,
   },
   studentEmail: {
     type: String,
-    required: true,
+    // required: true,
     unique: true,
     trim: true,
   },
   gender: {
     type: String,
-    required: true,
+    // required: true,
     enum: ['Male', 'Female', 'Other'],
   },
   amount: {
