@@ -1300,12 +1300,12 @@ exports.createRegistration = async (req, res) => {
       });
     }
 
-    // Check if the registration already exists
-    const registrationExist = await NewRegistrationModel.findOne({ mobileNumber });
+    // Check if the registration already exists for the specific school
+    const registrationExist = await NewRegistrationModel.findOne({ mobileNumber, schoolId: req.user.schoolId });
     if (registrationExist) {
       return res.status(400).json({
         success: false,
-        message: "Already registered!",
+        message: "Already registered in this school!",
       });
     }
 
@@ -1362,6 +1362,7 @@ exports.createRegistration = async (req, res) => {
   }
 };
 
+
 exports.createBulkRegistrations = async (req, res) => {
   try {
     const registrations = req.body.registrations;
@@ -1390,10 +1391,10 @@ exports.createBulkRegistrations = async (req, res) => {
         throw new Error("Missing required data in one or more entries.");
       }
 
-      // Check if the registration already exists
-      const registrationExist = await NewRegistrationModel.findOne({ mobileNumber });
+      // Check if the registration already exists for the specific school
+      const registrationExist = await NewRegistrationModel.findOne({ mobileNumber, schoolId: req.user.schoolId });
       if (registrationExist) {
-        throw new Error(`Already registered for mobile number: ${mobileNumber}`);
+        throw new Error(`Already registered in this school for mobile number: ${mobileNumber}`);
       }
 
       // Generate unique registration number
@@ -1430,6 +1431,7 @@ exports.createBulkRegistrations = async (req, res) => {
     });
   }
 };
+
 
 // Controller for fetching all registrations (GET)
 exports.getRegistrations = async (req, res) => {
