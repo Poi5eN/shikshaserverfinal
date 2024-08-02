@@ -43,6 +43,8 @@ router.put('/updateItem/:itemId', verifyToken, admin.updateItem);
 // POST route for creating registration
 router.post('/createRegistration', verifyToken, uploads, admin.createRegistration);
 router.post('/createBulkRegistrations', verifyToken, uploads, admin.createBulkRegistrations);
+router.put('/editRegistration/:registrationNumber', verifyToken, uploads, admin.editRegistration);
+router.delete('/deleteRegistration/:registrationNumber', verifyToken, uploads, admin.deleteRegistration);
 // GET route for fetching all registrations
 router.get('/getRegistrations', verifyToken, uploads, admin.getRegistrations);
 // GET route for fetching a specific registration by ID

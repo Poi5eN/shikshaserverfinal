@@ -1221,3 +1221,72 @@ exports.getFeeHistory = async (req, res) => {
         });
     }
 };
+
+
+// EDIT FEESTATUS CONTROLLER
+exports.editFeeStatus = async (req, res) => {
+    try {
+      const { receiptNumber } = req.params;
+      const updateData = req.body;
+  
+      // Find and update the fee status
+      const feeStatus = await FeeStatus.findOneAndUpdate(
+        { "feeHistory.feeReceiptNumber": receiptNumber },
+        { $set: { "feeHistory.$": updateData } },
+        { new: true }
+      );
+  
+      if (!feeStatus) {
+        return res.status(404).json({
+          success: false,
+          message: "Fee status not found",
+        });
+      }
+  
+      res.status(200).json({
+        success: true,
+        message: "Fee status updated successfully",
+        data: feeStatus,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: "Failed to update fee status due to an error.",
+        error: error.message,
+      });
+    }
+  };
+  
+// DELETE FEESTATUS CONTROLLER
+exports.deleteFeeStatus = async (req, res) => {
+    try {
+      const { receiptNumber } = req.params;
+  
+      // Find and update the fee status
+      const feeStatus = await FeeStatus.findOneAndUpdate(
+        { "feeHistory.feeReceiptNumber": receiptNumber },
+        { $pull: { feeHistory: { feeReceiptNumber: receiptNumber } } },
+        { new: true }
+      );
+  
+      if (!feeStatus) {
+        return res.status(404).json({
+          success: false,
+          message: "Fee status not found",
+        });
+      }
+  
+      res.status(200).json({
+        success: true,
+        message: "Fee status deleted successfully",
+        data: feeStatus,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: "Failed to delete fee status due to an error.",
+        error: error.message,
+      });
+    }
+  };
+  

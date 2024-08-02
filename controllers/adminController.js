@@ -1503,6 +1503,74 @@ exports.getRegistrationByNumber = async (req, res) => {
   }
 };
 
+
+// EDIT REGISTRATION CODE
+exports.editRegistration = async (req, res) => {
+  try {
+    const { registrationNumber } = req.params;
+    const updateData = req.body;
+
+    // Check if the registration exists
+    const registration = await NewRegistrationModel.findOneAndUpdate(
+      { registrationNumber },
+      updateData,
+      { new: true }
+    );
+
+    if (!registration) {
+      return res.status(404).json({
+        success: false,
+        message: "Registration not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Registration updated successfully",
+      data: registration,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to update registration due to an error.",
+      error: error.message,
+    });
+  }
+};
+
+
+// DELETE REGISTRATION CODE
+exports.deleteRegistration = async (req, res) => {
+  try {
+    const { registrationNumber } = req.params;
+
+    // Check if the registration exists
+    const registration = await NewRegistrationModel.findOneAndDelete({
+      registrationNumber,
+    });
+
+    if (!registration) {
+      return res.status(404).json({
+        success: false,
+        message: "Registration not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Registration deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete registration due to an error.",
+      error: error.message,
+    });
+  }
+};
+
+
+
 // END OF THE REGISTRATION
 
 // START OF ADMISSION
