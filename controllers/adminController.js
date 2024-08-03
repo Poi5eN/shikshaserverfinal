@@ -2580,6 +2580,9 @@ exports.createBulkStudentParent = async (req, res) => {
 
         console.log("Assigning roll number:", newRollNo);
 
+        // Generate a unique admission number
+        const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
+
         const studentData = await NewStudentModel.create({
           schoolId,
           fullName: studentFullName,
@@ -2666,10 +2669,6 @@ exports.createBulkStudentParent = async (req, res) => {
     });
   }
 };
-
-
-
-
 
 
 
