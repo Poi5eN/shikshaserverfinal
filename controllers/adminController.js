@@ -14,6 +14,7 @@ const {
 } = require("./authController");
 const { v4: uuidv4 } = require("uuid");
 const xlsx = require('xlsx');
+const mongoose = require('mongoose');
 const teacherModel = require("../models/teacherModel");
 const BookModel = require("../models/bookModel");
 const ItemModel = require("../models/inventoryItemModel");
@@ -2388,104 +2389,144 @@ exports.createStudentParent = async (req, res) => {
   }
 };
 
+
 exports.createBulkStudentParent = async (req, res) => {
   try {
     const { registrations } = req.body;
+
+    console.log("Received registrations:", registrations);
 
     if (!registrations || !Array.isArray(registrations)) {
       return res.status(400).json({ success: false, message: "Invalid data format" });
     }
 
+    const schoolId = req.user.schoolId;
+    const results = [];
+
     for (const record of registrations) {
-      const {
-        studentFullName, studentEmail, studentPassword, studentDateOfBirth, studentGender,
-        studentJoiningDate, studentAddress, studentContact, studentClass, studentSection,
-        studentCountry, studentSubject, fatherName, motherName, parentEmail, parentPassword,
-        parentContact, parentIncome, parentQualification, religion, caste, nationality, pincode,
-        state, city, image // Add image data if available
-      } = record;
+      try {
+        console.log("Processing record:", record);
 
-      const parsedIncome = parseFloat(parentIncome.replace(/[^0-9.-]+/g, ''));
+        const {
+          studentFullName, studentEmail, studentPassword, studentDateOfBirth, studentGender,
+          studentJoiningDate, studentAddress, studentContact, studentClass, studentSection,
+          studentCountry, studentSubject, fatherName, motherName, parentEmail, parentPassword,
+          parentContact, parentIncome, parentQualification, religion, caste, nationality, pincode,
+          state, city
+        } = record;
 
-      if (!studentEmail || !studentPassword || !parentEmail || !parentPassword) {
-        continue; // Skip record if essential data is missing
+        const parsedIncome = parseFloat(parentIncome.replace(/[^0-9.-]+/g, ''));
+
+        if (!studentEmail || !studentPassword || !parentEmail || !parentPassword) {
+          console.log("Essential data missing for record, skipping:", record);
+          results.push({ email: studentEmail, status: 'skipped', reason: 'Missing essential data' });
+          continue;
+        }
+
+        const studentExist = await NewStudentModel.findOne({ email: studentEmail, schoolId });
+        const parentExist = await ParentModel.findOne({ email: parentEmail, schoolId });
+        const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
+
+        if (studentExist || parentExist) {
+          console.log("Record already exists, skipping:", record);
+          results.push({ email: studentEmail, status: 'skipped', reason: 'Record already exists' });
+          continue;
+        }
+
+        const studentHashPassword = await hashPassword(studentPassword);
+        const parentHashPassword = await hashPassword(parentPassword);
+
+        // Ensure unique roll number
+        let newRollNo;
+        do {
+          newRollNo = Math.floor(Math.random() * 10000); // Generate a random roll number
+        } while (await NewStudentModel.exists({
+          rollNo: newRollNo,
+          class: studentClass,
+          schoolId
+        }));
+
+        console.log("Assigning roll number:", newRollNo);
+
+        const studentData = await NewStudentModel.create({
+          schoolId,
+          fullName: studentFullName,
+          email: studentEmail,
+          password: studentHashPassword,
+          dateOfBirth: studentDateOfBirth,
+          rollNo: newRollNo,
+          gender: studentGender,
+          joiningDate: studentJoiningDate,
+          address: studentAddress,
+          contact: studentContact,
+          class: studentClass,
+          section: studentSection,
+          country: studentCountry,
+          subject: studentSubject,
+          admissionNumber: studentAdmissionNumber,
+          religion,
+          caste,
+          nationality,
+          pincode,
+          state,
+          city,
+        });
+
+        console.log("Student data created:", studentData);
+
+        const parentAdmissionNumber = await generateAdmissionNumber(ParentModel);
+        const parentImage = record.image || { public_id: null, url: null };
+
+        const parentData = await ParentModel.create({
+          schoolId,
+          studentId: studentData._id,
+          studentName: studentFullName,
+          fullName: fatherName,
+          motherName,
+          email: parentEmail,
+          password: parentHashPassword,
+          contact: parentContact,
+          admissionNumber: parentAdmissionNumber,
+          income: parsedIncome,
+          qualification: parentQualification,
+          image: parentImage,
+        });
+
+        console.log("Parent data created:", parentData);
+
+        studentData.parentId = parentData._id;
+        await studentData.save();
+
+        console.log("Student data updated with parent ID:", studentData);
+
+        results.push({ email: studentEmail, status: 'saved' });
+      } catch (error) {
+        console.error("Error processing record:", error);
+        results.push({ email: record.studentEmail, status: 'error', reason: error.message });
       }
-
-      const studentExist = await NewStudentModel.findOne({ email: studentEmail, schoolId: req.user.schoolId });
-      const parentExist = await ParentModel.findOne({ email: parentEmail, schoolId: req.user.schoolId });
-      const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
-
-      if (studentExist || parentExist) {
-        continue; // Skip record if student or parent already exists
-      }
-
-      const studentHashPassword = await hashPassword(studentPassword);
-      const parentHashPassword = await hashPassword(parentPassword);
-
-      const maxRollNoStudent = await NewStudentModel.findOne({
-        schoolId: req.user.schoolId,
-        class: studentClass,
-      }).sort({ rollNo: -1 }).select('rollNo');
-
-      let newRollNo = 1;
-      if (maxRollNoStudent) {
-        newRollNo = maxRollNoStudent.rollNo + 1;
-      }
-
-      const studentData = await NewStudentModel.create({
-        schoolId: req.user.schoolId,
-        fullName: studentFullName,
-        email: studentEmail,
-        password: studentHashPassword,
-        dateOfBirth: studentDateOfBirth,
-        rollNo: newRollNo,
-        gender: studentGender,
-        joiningDate: studentJoiningDate,
-        address: studentAddress,
-        contact: studentContact,
-        class: studentClass,
-        fatherName: fatherName,
-        motherName: motherName,
-        section: studentSection,
-        country: studentCountry,
-        subject: studentSubject,
-        admissionNumber: studentAdmissionNumber,
-        religion: religion,
-        caste: caste,
-        nationality: nationality,
-        pincode: pincode,
-        state: state,
-        city: city,
-      });
-
-      const parentAdmissionNumber = await generateAdmissionNumber(ParentModel);
-
-      const parentImage = image || { public_id: null, url: null };
-
-      const parentData = await ParentModel.create({
-        schoolId: req.user.schoolId,
-        studentId: studentData._id,
-        studentName: studentFullName,
-        fullName: fatherName,
-        motherName,
-        email: parentEmail,
-        password: parentHashPassword,
-        contact: parentContact,
-        admissionNumber: parentAdmissionNumber,
-        income: parsedIncome,
-        qualification: parentQualification,
-        image: parentImage,
-      });
-
-      studentData.parentId = parentData._id;
-      await studentData.save();
     }
 
-    res.status(201).json({ success: true, message: "Bulk registration created successfully" });
+    res.status(201).json({
+      success: true,
+      message: "Bulk registration created successfully",
+      results
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Bulk registration failed", error: error.message });
+    console.error("Error in bulk registration:", error);
+    res.status(500).json({
+      success: false,
+      message: "Bulk registration failed",
+      error: error.message
+    });
   }
 };
+
+
+
+
+
+
+
 
 
 
