@@ -63,6 +63,10 @@ router.put('/updateStudent', verifyToken, singleUpload, admin.updateStudent);
 router.get('/getLastYearStudents', verifyToken, admin.getStudentsCreatedAfterAprilOfCurrentYear)
 
 
+router.delete('/deleteStudentsBySchool', verifyToken, admin.deleteStudentsBySchool)
+router.delete('/deleteStudentsByClass', verifyToken, admin.deleteStudentsByClass)
+
+
 router.post("/createEmployee", verifyToken, singleUpload, admin.createEmployee);
 router.get("/getAllEmployees", verifyToken, admin.getAllEmployees);
 router.put('/deactivateEmployee', verifyToken, admin.deactivateEmployee);
