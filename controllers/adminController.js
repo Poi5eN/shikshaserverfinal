@@ -2917,10 +2917,10 @@ exports.createStudentParent = async (req, res) => {
       studentJoiningDate, studentAddress, studentContact, studentClass, studentSection,
       studentCountry, studentSubject, fatherName, motherName, parentEmail, parentPassword,
       parentContact, parentIncome, parentQualification, religion, caste, nationality, pincode,
-      state, city
+      state, city, rollNo
     } = req.body;
 
-    if (!studentEmail || !studentPassword || !parentEmail || !parentPassword) {
+    if (!studentEmail || !studentPassword || !parentEmail || !parentPassword || !rollNo) {
       return res.status(400).json({ success: false, message: "Please Enter All required Data" });
     }
 
@@ -2936,6 +2936,12 @@ exports.createStudentParent = async (req, res) => {
       return res.status(400).json({ success: false, message: "Student or Parent already exists with this email in the same school" });
     }
 
+    const rollNoExist = await NewStudentModel.findOne({ schoolId, class: studentClass, section: studentSection, rollNo });
+
+    if (rollNoExist) {
+      return res.status(400).json({ success: false, message: "Roll number already exists in the specified class and section" });
+    }
+
     const studentHashPassword = await hashPassword(studentPassword);
     const parentHashPassword = await hashPassword(parentPassword);
 
@@ -2943,9 +2949,6 @@ exports.createStudentParent = async (req, res) => {
     const parentFileUri = getDataUri(parentFile);
 
     const studentImageResult = await cloudinary.uploader.upload(studentFileUri.content);
-
-    const maxRollNoStudent = await NewStudentModel.findOne({ schoolId, class: studentClass, section: studentSection }).sort({ rollNo: -1 }).select('rollNo');
-    const newRollNo = maxRollNoStudent ? maxRollNoStudent.rollNo + 1 : 1;
 
     const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
 
@@ -2955,7 +2958,7 @@ exports.createStudentParent = async (req, res) => {
       email: studentEmail,
       password: studentHashPassword,
       dateOfBirth: studentDateOfBirth,
-      rollNo: newRollNo,
+      rollNo,
       gender: studentGender,
       joiningDate: studentJoiningDate,
       address: studentAddress,
@@ -3050,12 +3053,12 @@ exports.createBulkStudentParent = async (req, res) => {
           studentJoiningDate, studentAddress, studentContact, studentClass, studentSection,
           studentCountry, studentSubject, fatherName, motherName, parentEmail, parentPassword,
           parentContact, parentIncome, parentQualification, religion, caste, nationality, pincode,
-          state, city
+          state, city, rollNo
         } = record;
 
         const parsedIncome = parseFloat(parentIncome.replace(/[^0-9.-]+/g, ''));
 
-        if (!studentEmail || !studentPassword || !parentEmail || !parentPassword) {
+        if (!studentEmail || !studentPassword || !parentEmail || !parentPassword || !rollNo) {
           results.push({ email: studentEmail, status: 'skipped', reason: 'Missing essential data' });
           continue;
         }
@@ -3068,11 +3071,15 @@ exports.createBulkStudentParent = async (req, res) => {
           continue;
         }
 
+        const rollNoExist = await NewStudentModel.findOne({ schoolId, class: studentClass, section: studentSection, rollNo });
+
+        if (rollNoExist) {
+          results.push({ email: studentEmail, status: 'skipped', reason: 'Roll number already exists in the specified class and section' });
+          continue;
+        }
+
         const studentHashPassword = await hashPassword(studentPassword);
         const parentHashPassword = await hashPassword(parentPassword);
-
-        const maxRollNoStudent = await NewStudentModel.findOne({ schoolId, class: studentClass, section: studentSection }).sort({ rollNo: -1 }).select('rollNo');
-        const newRollNo = maxRollNoStudent ? maxRollNoStudent.rollNo + 1 : 1;
 
         const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
 
@@ -3082,7 +3089,7 @@ exports.createBulkStudentParent = async (req, res) => {
           email: studentEmail,
           password: studentHashPassword,
           dateOfBirth: studentDateOfBirth,
-          rollNo: newRollNo,
+          rollNo,
           gender: studentGender,
           joiningDate: studentJoiningDate,
           address: studentAddress,
@@ -3144,6 +3151,7 @@ exports.createBulkStudentParent = async (req, res) => {
     });
   }
 };
+
 
 // LATER TEST ADMISSION CODE END
 

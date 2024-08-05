@@ -47,7 +47,7 @@ const studentSchema = new mongoose.Schema({
     },
     rollNo: {
         type: Number,
-        required: true,
+        // required: true,
         unique: true,
     },
     "parentId": {
