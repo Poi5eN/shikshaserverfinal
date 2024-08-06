@@ -2589,15 +2589,18 @@ exports.createStudentParent = async (req, res) => {
 // EARLIER WORKING WELL BULK ADMISSION CODE START
 // Function to get a unique roll number
 async function getUniqueRollNo(studentClass, studentSection, schoolId) {
-  const existingStudents = await NewStudentModel.find({
-    schoolId,
-    class: studentClass,
-    section: studentSection
-  }).sort({ rollNo: -1 });
+    // Retrieve existing students sorted by rollNo in descending order
+    const existingStudents = await NewStudentModel.find({
+        schoolId,
+        class: studentClass,
+        section: studentSection
+    }).sort({ rollNo: -1 }).limit(1);
 
-  const highestRollNo = existingStudents.length > 0 ? existingStudents[0].rollNo : 0;
+    // Determine the highest roll number or start with 0 if none exist
+    const highestRollNo = existingStudents.length > 0 ? existingStudents[0].rollNo : 0;
 
-  return (highestRollNo + 1).toString();
+    // Return the next roll number
+    return highestRollNo + 1;
 }
 exports.createBulkStudentParent = async (req, res) => {
   try {
