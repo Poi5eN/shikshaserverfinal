@@ -2691,16 +2691,16 @@ exports.createBulkStudentParent = async (req, res) => {
         }
 
         // Check if the provided rollNo is already taken
-        const rollNoExists = await NewStudentModel.findOne({
-          schoolId,
-          class: studentClass,
-          section: studentSection,
-          rollNo
-        });
+        // const rollNoExists = await NewStudentModel.findOne({
+        //   schoolId,
+        //   class: studentClass,
+        //   section: studentSection,
+        //   rollNo
+        // });
 
-        if (rollNoExists) {
-          throw new Error("Roll number already exists in the same class and section");
-        }
+        // if (rollNoExists) {
+        //   throw new Error("Roll number already exists in the same class and section");
+        // }
 
         const studentHashPassword = await hashPassword(studentPassword);
         const parentHashPassword = await hashPassword(parentPassword);
