@@ -1182,7 +1182,7 @@ exports.updateSubject = async (req, res) => {
 const generateRegistrationNumber = async () => {
   const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const numbers = '0123456789';
-  
+
   const randomLetters = Array.from({ length: 3 }, () => letters.charAt(Math.floor(Math.random() * letters.length))).join('');
   const randomNumbers = Array.from({ length: 3 }, () => numbers.charAt(Math.floor(Math.random() * numbers.length))).join('');
   const registrationNumber = randomLetters + randomNumbers;
@@ -1457,7 +1457,7 @@ exports.getRegistrationById = async (req, res) => {
   try {
     const { id } = req.params;
     const registration = await NewRegistrationModel.findOne({ _id: id, schoolId: req.user.schoolId });
-    
+
     if (!registration) {
       return res.status(404).json({
         success: false,
@@ -1484,7 +1484,7 @@ exports.getRegistrationByNumber = async (req, res) => {
   try {
     const { registrationNumber } = req.params;
     const registration = await NewRegistrationModel.findOne({ registrationNumber, schoolId: req.user.schoolId });
-    
+
     if (!registration) {
       return res.status(404).json({
         success: false,
@@ -1662,7 +1662,7 @@ const generateAdmissionNumber = async (Model) => {
 //       schoolId: req.user.schoolId,
 //       class: studentClass,
 //     }).sort({ rollNo: -1 }).select('rollNo');
-    
+
 //     let newRollNo = 1;
 //     if (maxRollNoStudent) {
 //       newRollNo = maxRollNoStudent.rollNo + 1;
@@ -2005,7 +2005,7 @@ const generateAdmissionNumber = async (Model) => {
 //       schoolId: req.user.schoolId,
 //       class: studentClass,
 //     }).sort({ rollNo: -1 }).select('rollNo');
-    
+
 //     let newRollNo = 1;
 //     if (maxRollNoStudent) {
 //       newRollNo = maxRollNoStudent.rollNo + 1;
@@ -2190,7 +2190,7 @@ const generateAdmissionNumber = async (Model) => {
 //         schoolId: req.user.schoolId,
 //         class: studentClass,
 //       }).sort({ rollNo: -1 }).select('rollNo');
-      
+
 //       let newRollNo = 1;
 //       if (maxRollNoStudent) {
 //         newRollNo = maxRollNoStudent.rollNo + 1;
@@ -2665,12 +2665,14 @@ exports.createBulkStudentParent = async (req, res) => {
         }
 
         // Calculate the roll number based on the count of existing students in the class and section
-        const studentCount = await NewStudentModel.countDocuments({
+        // Check for existing roll numbers in the same class and section
+        const existingStudents = await NewStudentModel.find({
           schoolId,
           class: studentClass,
           section: studentSection
         });
-        const rollNo = studentCount + 1;
+
+        const rollNo = existingStudents.length + 1;
 
         const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
 
@@ -2701,7 +2703,7 @@ exports.createBulkStudentParent = async (req, res) => {
           image: studentImageResult ? {
             public_id: studentImageResult.public_id,
             url: studentImageResult.secure_url,
-          } : null,          
+          } : null,
         });
 
         console.log("Student data created:", studentData);
@@ -2723,7 +2725,7 @@ exports.createBulkStudentParent = async (req, res) => {
           image: parentImageResult ? {
             public_id: parentImageResult.public_id,
             url: parentImageResult.secure_url,
-          } : null,          
+          } : null,
         });
 
         console.log("Parent data created:", parentData);
@@ -3982,8 +3984,8 @@ exports.getStudentsCreatedAfterAprilOfCurrentYear = async (req, res) => {
     res.status(200).json({
       count: allStudent.length,
       success: true,
-     
-      message:"Get All Student Data Successfully",
+
+      message: "Get All Student Data Successfully",
       allStudent: allStudent,
     });
   } catch (error) {
@@ -4082,19 +4084,19 @@ exports.createEmployee = async (req, res) => {
       <p>Your Password: ${password}</p>
   `;
 
-  sendEmail(email, "Employee Login Credentials", employeeEmailContent)
-    .then(() => {
-      console.log(
-        "Employee Created and also send message to employee email Id"
-      );
-    })
-    .catch((error) => {
-      return res.status(500).json({
-        success: false,
-        message: "Mail is not send to Employee Email Address due to error",
-        error: error.message,
-      });
-    });
+      sendEmail(email, "Employee Login Credentials", employeeEmailContent)
+        .then(() => {
+          console.log(
+            "Employee Created and also send message to employee email Id"
+          );
+        })
+        .catch((error) => {
+          return res.status(500).json({
+            success: false,
+            message: "Mail is not send to Employee Email Address due to error",
+            error: error.message,
+          });
+        });
     }
     else {
       return res.status(500).json({
@@ -4795,14 +4797,14 @@ exports.updateCurriculum = async (req, res) => {
 exports.getAllCurriculum = async (req, res) => {
   try {
 
-    const {curriculumId, className} = req.query;
+    const { curriculumId, className } = req.query;
 
     const filter = {
-      ...(curriculumId ? {_id: curriculumId} : {}),
-      ...(className ? {className: className}: {})
+      ...(curriculumId ? { _id: curriculumId } : {}),
+      ...(className ? { className: className } : {})
     }
 
-    const allCurriculum = await CurriculumModel.find({...filter, schoolId: req.user.schoolId });
+    const allCurriculum = await CurriculumModel.find({ ...filter, schoolId: req.user.schoolId });
 
     res.status(200).json({
       success: true,
@@ -4843,7 +4845,7 @@ exports.createAssignment = async (req, res) => {
       });
     }
 
-        const assignmentFile = await cloudinary.v2.uploader.upload(
+    const assignmentFile = await cloudinary.v2.uploader.upload(
       fileDataUri.content
     );
 
@@ -4868,7 +4870,7 @@ exports.createAssignment = async (req, res) => {
     });
   } catch (error) {
     console.error("Error occurred at--->>>>>>:", error.stack);
-    console.log("AJAYARJ---",error)
+    console.log("AJAYARJ---", error)
     res.status(500).json({
       success: false,
       message: "Assignment of that class is not created due to error",
@@ -4986,15 +4988,15 @@ exports.updateAssignment = async (req, res) => {
 exports.getAllAssignment = async (req, res) => {
   try {
 
-    const {assignmentId, className, section} = req.query;
+    const { assignmentId, className, section } = req.query;
 
     const filter = {
-      ...(assignmentId ? {_id: assignmentId} : {}),
-      ...(className ? {className: className}: {}),
-      ...(section ? {section: section}: {})
+      ...(assignmentId ? { _id: assignmentId } : {}),
+      ...(className ? { className: className } : {}),
+      ...(section ? { section: section } : {})
     }
 
-    const allAssignment = await AssignmentModel.find({...filter, schoolId: req.user.schoolId });
+    const allAssignment = await AssignmentModel.find({ ...filter, schoolId: req.user.schoolId });
 
     res.status(200).json({
       success: true,
@@ -5144,7 +5146,7 @@ exports.getAllIssueBookToMe = async (req, res) => {
       listOfBook
     })
   }
-  catch(error) {
+  catch (error) {
     res.status(500).json({
       success: false,
       message: "Not Fetch of list of issue book",
