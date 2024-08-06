@@ -2588,40 +2588,40 @@ exports.createStudentParent = async (req, res) => {
 
 // EARLIER WORKING WELL BULK ADMISSION CODE START
 // Function to get a unique roll number
-async function getUniqueRollNo(studentClass, studentSection, schoolId) {
-  try {
-    // Use a session to handle transactions and ensure atomicity
-    const session = await mongoose.startSession();
-    session.startTransaction();
+// async function getUniqueRollNo(studentClass, studentSection, schoolId) {
+//   try {
+//     // Use a session to handle transactions and ensure atomicity
+//     const session = await mongoose.startSession();
+//     session.startTransaction();
 
-    const existingRoll = await NewStudentModel.findOneAndUpdate(
-      {
-        schoolId,
-        class: studentClass,
-        section: studentSection
-      },
-      {
-        $inc: { rollNo: 1 } // Increment rollNo
-      },
-      {
-        sort: { rollNo: -1 }, // Sort by rollNo to get the highest value
-        new: true, // Return the updated document
-        upsert: true, // Create a new document if none exists
-        useFindAndModify: false,
-        session
-      }
-    );
+//     const existingRoll = await NewStudentModel.findOneAndUpdate(
+//       {
+//         schoolId,
+//         class: studentClass,
+//         section: studentSection
+//       },
+//       {
+//         $inc: { rollNo: 1 } // Increment rollNo
+//       },
+//       {
+//         sort: { rollNo: -1 }, // Sort by rollNo to get the highest value
+//         new: true, // Return the updated document
+//         upsert: true, // Create a new document if none exists
+//         useFindAndModify: false,
+//         session
+//       }
+//     );
 
-    // Commit the transaction and end the session
-    await session.commitTransaction();
-    session.endSession();
+//     // Commit the transaction and end the session
+//     await session.commitTransaction();
+//     session.endSession();
 
-    // Return the updated rollNo or default to 1 if none exists
-    return existingRoll ? existingRoll.rollNo : 1;
-  } catch (error) {
-    throw new Error(`Failed to generate unique roll number: ${error.message}`);
-  }
-}
+//     // Return the updated rollNo or default to 1 if none exists
+//     return existingRoll ? existingRoll.rollNo : 1;
+//   } catch (error) {
+//     throw new Error(`Failed to generate unique roll number: ${error.message}`);
+//   }
+// }
 
 
 
@@ -2671,7 +2671,8 @@ exports.createBulkStudentParent = async (req, res) => {
         state,
         city,
         studentImage,
-        parentImage
+        parentImage,
+        rollNo
       } = student;
 
       const parsedIncome = parseFloat(parentIncome.replace(/[^0-9.-]+/g, ''));
@@ -2733,13 +2734,17 @@ exports.createBulkStudentParent = async (req, res) => {
         //   }
         // }
          // Calculate the roll number based on the count of existing students in the class and section
-         let rollNo;
-         try {
-           rollNo = await getUniqueRollNo(studentClass, studentSection, schoolId);
-         } catch (err) {
-           errors.push({ studentEmail, error: "Failed to generate unique roll number" });
-           continue; // Skip this student and move to the next
-         }
+         // Check if the provided rollNo is already taken
+        const rollNoExists = await NewStudentModel.findOne({
+          schoolId,
+          class: studentClass,
+          section: studentSection,
+          rollNo
+        });
+
+        if (rollNoExists) {
+          throw new Error("Roll number already exists in the same class and section");
+        }
 
         const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
 
