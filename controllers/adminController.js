@@ -2589,6 +2589,14 @@ exports.createStudentParent = async (req, res) => {
 // EARLIER WORKING WELL BULK ADMISSION CODE START
 exports.createBulkStudentParent = async (req, res) => {
   try {
+    // Check if the request body contains the students field
+    if (!req.body || !req.body.students || !Array.isArray(req.body.students)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid request format. Expected an array of students.",
+      });
+    }
+
     const studentsData = req.body.students; // Assuming the JSON data is in the "students" field
     const schoolId = req.user.schoolId; // Extract schoolId from the logged-in user
 
@@ -2622,8 +2630,8 @@ exports.createBulkStudentParent = async (req, res) => {
         pincode,
         state,
         city,
-        studentImage, // Optional
-        parentImage   // Optional
+        studentImage,
+        parentImage
       } = student;
 
       const parsedIncome = parseFloat(parentIncome.replace(/[^0-9.-]+/g, ''));
@@ -2690,10 +2698,10 @@ exports.createBulkStudentParent = async (req, res) => {
           pincode,
           state,
           city,
-          image: studentImageResult ? {
+          image: {
             public_id: studentImageResult.public_id,
             url: studentImageResult.secure_url,
-          } : null,
+          },
         });
 
         console.log("Student data created:", studentData);
@@ -2712,10 +2720,11 @@ exports.createBulkStudentParent = async (req, res) => {
           admissionNumber: parentAdmissionNumber,
           income: parsedIncome,
           qualification: parentQualification,
-          image: parentImageResult ? {
+          image: parentImage,
+          image: {
             public_id: parentImageResult.public_id,
             url: parentImageResult.secure_url,
-          } : null,
+          },
         });
 
         console.log("Parent data created:", parentData);
@@ -2755,7 +2764,6 @@ exports.createBulkStudentParent = async (req, res) => {
     });
   }
 };
-
 
 
 // exports.createBulkStudentParent = async (req, res) => {
