@@ -2713,7 +2713,7 @@ exports.createBulkStudentParent = async (req, res) => {
           email: studentEmail,
           password: studentHashPassword,
           dateOfBirth: studentDateOfBirth,
-          rollNo: rollNo, // Directly use the provided rollNo
+          rollNo: rollNo || '', // Directly use the provided rollNo
           gender: studentGender,
           joiningDate: studentJoiningDate,
           address: studentAddress,
