@@ -2698,10 +2698,10 @@ exports.createBulkStudentParent = async (req, res) => {
           pincode,
           state,
           city,
-          image: {
+          image: studentImageResult ? {
             public_id: studentImageResult.public_id,
             url: studentImageResult.secure_url,
-          },
+          } : null,          
         });
 
         console.log("Student data created:", studentData);
@@ -2720,11 +2720,10 @@ exports.createBulkStudentParent = async (req, res) => {
           admissionNumber: parentAdmissionNumber,
           income: parsedIncome,
           qualification: parentQualification,
-          image: parentImage,
-          image: {
+          image: parentImageResult ? {
             public_id: parentImageResult.public_id,
             url: parentImageResult.secure_url,
-          },
+          } : null,          
         });
 
         console.log("Parent data created:", parentData);
