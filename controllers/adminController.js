@@ -2587,6 +2587,38 @@ exports.createStudentParent = async (req, res) => {
 // };
 
 // EARLIER WORKING WELL BULK ADMISSION CODE START
+// Function to get a unique roll number
+async function getUniqueRollNo(studentClass, studentSection, schoolId) {
+  // Start a session for transaction
+  const session = await mongoose.startSession();
+  let rollNo = 1;
+
+  try {
+    session.startTransaction();
+
+    // Find the highest roll number in the specified class and section
+    const existingStudents = await NewStudentModel.find({
+      schoolId,
+      class: studentClass,
+      section: studentSection
+    }).session(session);
+
+    // Calculate the next roll number
+    if (existingStudents.length > 0) {
+      rollNo = Math.max(...existingStudents.map(s => s.rollNo)) + 1;
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return rollNo;
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
+}
+
 exports.createBulkStudentParent = async (req, res) => {
   try {
     // Check if the request body contains the students field
@@ -2667,31 +2699,32 @@ exports.createBulkStudentParent = async (req, res) => {
         // Calculate the roll number based on the count of existing students in the class and section
         // Check for existing roll numbers in the same class and section
         // Calculate the roll number based on the count of existing students in the class and section
-    let rollNo;
-    let uniqueRollNoFound = false;
+        // let rollNo;
+        // let uniqueRollNoFound = false;
 
-    while (!uniqueRollNoFound) {
-      const existingStudents = await NewStudentModel.find({
-        schoolId,
-        class: studentClass,
-        section: studentSection,
-        rollNo: rollNo // Ensure that the rollNo is not already taken
-      });
+        // while (!uniqueRollNoFound) {
+        //   const existingStudents = await NewStudentModel.find({
+        //     schoolId,
+        //     class: studentClass,
+        //     section: studentSection,
+        //     rollNo: rollNo // Ensure that the rollNo is not already taken
+        //   });
 
-      rollNo = existingStudents.length + 1;
+        //   rollNo = existingStudents.length + 1;
 
-      // Check if the rollNo is already taken
-      const rollNoExists = await NewStudentModel.findOne({
-        schoolId,
-        class: studentClass,
-        section: studentSection,
-        rollNo
-      });
+        //   // Check if the rollNo is already taken
+        //   const rollNoExists = await NewStudentModel.findOne({
+        //     schoolId,
+        //     class: studentClass,
+        //     section: studentSection,
+        //     rollNo
+        //   });
 
-      if (!rollNoExists) {
-        uniqueRollNoFound = true;
-      }
-    }
+        //   if (!rollNoExists) {
+        //     uniqueRollNoFound = true;
+        //   }
+        // }
+        let rollNo = await getUniqueRollNo(studentClass, studentSection, schoolId);
 
         const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
 
