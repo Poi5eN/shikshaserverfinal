@@ -2589,14 +2589,6 @@ exports.createStudentParent = async (req, res) => {
 // EARLIER WORKING WELL BULK ADMISSION CODE START
 exports.createBulkStudentParent = async (req, res) => {
   try {
-    // Check if the request body contains the students field
-    if (!req.body || !req.body.students || !Array.isArray(req.body.students)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid request format. Expected an array of students.",
-      });
-    }
-
     const studentsData = req.body.students; // Assuming the JSON data is in the "students" field
     const schoolId = req.user.schoolId; // Extract schoolId from the logged-in user
 
@@ -2630,8 +2622,8 @@ exports.createBulkStudentParent = async (req, res) => {
         pincode,
         state,
         city,
-        studentImage,
-        parentImage
+        studentImage, // Optional
+        parentImage   // Optional
       } = student;
 
       const parsedIncome = parseFloat(parentIncome.replace(/[^0-9.-]+/g, ''));
@@ -2652,8 +2644,17 @@ exports.createBulkStudentParent = async (req, res) => {
         const studentHashPassword = await hashPassword(studentPassword);
         const parentHashPassword = await hashPassword(parentPassword);
 
-        const studentImageResult = await cloudinary.uploader.upload(studentImage);
-        const parentImageResult = await cloudinary.uploader.upload(parentImage);
+        // Upload images only if they are provided
+        let studentImageResult = null;
+        let parentImageResult = null;
+
+        if (studentImage) {
+          studentImageResult = await cloudinary.uploader.upload(studentImage);
+        }
+
+        if (parentImage) {
+          parentImageResult = await cloudinary.uploader.upload(parentImage);
+        }
 
         // Calculate the roll number based on the count of existing students in the class and section
         const studentCount = await NewStudentModel.countDocuments({
@@ -2689,10 +2690,10 @@ exports.createBulkStudentParent = async (req, res) => {
           pincode,
           state,
           city,
-          image: {
+          image: studentImageResult ? {
             public_id: studentImageResult.public_id,
             url: studentImageResult.secure_url,
-          },
+          } : null,
         });
 
         console.log("Student data created:", studentData);
@@ -2711,11 +2712,10 @@ exports.createBulkStudentParent = async (req, res) => {
           admissionNumber: parentAdmissionNumber,
           income: parsedIncome,
           qualification: parentQualification,
-          image: parentImage,
-          image: {
+          image: parentImageResult ? {
             public_id: parentImageResult.public_id,
             url: parentImageResult.secure_url,
-          },
+          } : null,
         });
 
         console.log("Parent data created:", parentData);
@@ -2755,6 +2755,7 @@ exports.createBulkStudentParent = async (req, res) => {
     });
   }
 };
+
 
 
 // exports.createBulkStudentParent = async (req, res) => {
