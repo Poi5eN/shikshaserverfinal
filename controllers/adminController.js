@@ -2589,34 +2589,33 @@ exports.createStudentParent = async (req, res) => {
 // EARLIER WORKING WELL BULK ADMISSION CODE START
 // Function to get a unique roll number
 async function getUniqueRollNo(studentClass, studentSection, schoolId) {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
-    let rollNo = 1;
+    // Find and update the highest roll number in the specified class and section
+    const result = await NewStudentModel.findOneAndUpdate(
+      {
+        schoolId,
+        class: studentClass,
+        section: studentSection,
+        rollNo: { $exists: true } // Match existing roll numbers
+      },
+      {
+        $inc: { rollNo: 1 } // Increment roll number
+      },
+      {
+        sort: { rollNo: -1 }, // Sort to get the highest roll number
+        new: true, // Return the updated document
+        upsert: true, // Create a new document if none exists
+        useFindAndModify: false // Avoid deprecated method warning
+      }
+    );
 
-    // Find the highest roll number in the specified class and section
-    const existingStudents = await NewStudentModel.find({
-      schoolId,
-      class: studentClass,
-      section: studentSection
-    }).session(session);
-
-    // Calculate the next roll number
-    if (existingStudents.length > 0) {
-      rollNo = Math.max(...existingStudents.map(s => s.rollNo)) + 1;
-    }
-
-    await session.commitTransaction();
-    session.endSession();
-
-    return rollNo;
+    // If no roll number is found, default to 1
+    return result ? result.rollNo : 1;
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    throw error;
+    throw new Error(`Failed to generate unique roll number: ${error.message}`);
   }
 }
+
 
 
 
