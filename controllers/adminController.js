@@ -2690,18 +2690,6 @@ exports.createBulkStudentParent = async (req, res) => {
           throw new Error("Student or Parent already exists with this email in the same school");
         }
 
-        // Check if the provided rollNo is already taken
-        // const rollNoExists = await NewStudentModel.findOne({
-        //   schoolId,
-        //   class: studentClass,
-        //   section: studentSection,
-        //   rollNo
-        // });
-
-        // if (rollNoExists) {
-        //   throw new Error("Roll number already exists in the same class and section");
-        // }
-
         const studentHashPassword = await hashPassword(studentPassword);
         const parentHashPassword = await hashPassword(parentPassword);
 
@@ -2717,47 +2705,6 @@ exports.createBulkStudentParent = async (req, res) => {
           parentImageResult = await cloudinary.uploader.upload(parentImage);
         }
 
-        // Calculate the roll number based on the count of existing students in the class and section
-        // Check for existing roll numbers in the same class and section
-        // Calculate the roll number based on the count of existing students in the class and section
-        // let rollNo;
-        // let uniqueRollNoFound = false;
-
-        // while (!uniqueRollNoFound) {
-        //   const existingStudents = await NewStudentModel.find({
-        //     schoolId,
-        //     class: studentClass,
-        //     section: studentSection,
-        //     rollNo: rollNo // Ensure that the rollNo is not already taken
-        //   });
-
-        //   rollNo = existingStudents.length + 1;
-
-        //   // Check if the rollNo is already taken
-        //   const rollNoExists = await NewStudentModel.findOne({
-        //     schoolId,
-        //     class: studentClass,
-        //     section: studentSection,
-        //     rollNo
-        //   });
-
-        //   if (!rollNoExists) {
-        //     uniqueRollNoFound = true;
-        //   }
-        // }
-         // Calculate the roll number based on the count of existing students in the class and section
-         // Check if the provided rollNo is already taken
-        // const rollNoExists = await NewStudentModel.findOne({
-        //   schoolId,
-        //   class: studentClass,
-        //   section: studentSection,
-        //   rollNo
-        // });
-
-        // if (rollNoExists) {
-        //   throw new Error("Roll number already exists in the same class and section");
-        // }
-
         const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
 
         const studentData = await NewStudentModel.create({
@@ -2766,7 +2713,7 @@ exports.createBulkStudentParent = async (req, res) => {
           email: studentEmail,
           password: studentHashPassword,
           dateOfBirth: studentDateOfBirth,
-          rollNo: rollNo,
+          rollNo: rollNo, // Directly use the provided rollNo
           gender: studentGender,
           joiningDate: studentJoiningDate,
           address: studentAddress,
@@ -2791,8 +2738,7 @@ exports.createBulkStudentParent = async (req, res) => {
         });
 
         console.log("Student data created:", studentData);
-        console.log(`Attempting to assign roll number ${rollNo} to student ${studentEmail}`);
-
+        console.log(`Assigned roll number ${rollNo} to student ${studentEmail}`);
 
         const parentAdmissionNumber = await generateAdmissionNumber(ParentModel);
 
@@ -2851,6 +2797,7 @@ exports.createBulkStudentParent = async (req, res) => {
     });
   }
 };
+
 
 
 // exports.createBulkStudentParent = async (req, res) => {
