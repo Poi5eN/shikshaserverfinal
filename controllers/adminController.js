@@ -2666,13 +2666,32 @@ exports.createBulkStudentParent = async (req, res) => {
 
         // Calculate the roll number based on the count of existing students in the class and section
         // Check for existing roll numbers in the same class and section
-        const existingStudents = await NewStudentModel.find({
-          schoolId,
-          class: studentClass,
-          section: studentSection
-        });
+        // Calculate the roll number based on the count of existing students in the class and section
+        let rollNo;
+        let uniqueRollNoFound = false;
 
-        const rollNo = existingStudents.length + 1;
+        while (!uniqueRollNoFound) {
+          const existingStudents = await NewStudentModel.find({
+            schoolId,
+            class: studentClass,
+            section: studentSection,
+            rollNo: rollNo // Ensure that the rollNo is not already taken
+          });
+
+          rollNo = existingStudents.length + 1;
+
+          // Check if the rollNo is already taken
+          const rollNoExists = await NewStudentModel.findOne({
+            schoolId,
+            class: studentClass,
+            section: studentSection,
+            rollNo
+          });
+
+          if (!rollNoExists) {
+            uniqueRollNoFound = true;
+          }
+        }
 
         const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
 
