@@ -2591,11 +2591,10 @@ exports.createStudentParent = async (req, res) => {
 async function getUniqueRollNo(studentClass, studentSection, schoolId) {
   // Start a session for transaction
   const session = await mongoose.startSession();
+  session.startTransaction();
   let rollNo = 1;
 
   try {
-    session.startTransaction();
-
     // Find the highest roll number in the specified class and section
     const existingStudents = await NewStudentModel.find({
       schoolId,
@@ -2618,6 +2617,7 @@ async function getUniqueRollNo(studentClass, studentSection, schoolId) {
     throw error;
   }
 }
+
 
 exports.createBulkStudentParent = async (req, res) => {
   try {
@@ -2759,6 +2759,8 @@ exports.createBulkStudentParent = async (req, res) => {
         });
 
         console.log("Student data created:", studentData);
+        console.log(`Attempting to assign roll number ${rollNo} to student ${studentEmail}`);
+
 
         const parentAdmissionNumber = await generateAdmissionNumber(ParentModel);
 
