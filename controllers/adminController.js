@@ -2589,12 +2589,12 @@ exports.createStudentParent = async (req, res) => {
 // EARLIER WORKING WELL BULK ADMISSION CODE START
 // Function to get a unique roll number
 async function getUniqueRollNo(studentClass, studentSection, schoolId) {
-  // Start a session for transaction
   const session = await mongoose.startSession();
   session.startTransaction();
-  let rollNo = 1;
 
   try {
+    let rollNo = 1;
+
     // Find the highest roll number in the specified class and section
     const existingStudents = await NewStudentModel.find({
       schoolId,
@@ -2617,6 +2617,7 @@ async function getUniqueRollNo(studentClass, studentSection, schoolId) {
     throw error;
   }
 }
+
 
 
 exports.createBulkStudentParent = async (req, res) => {
@@ -2724,7 +2725,14 @@ exports.createBulkStudentParent = async (req, res) => {
         //     uniqueRollNoFound = true;
         //   }
         // }
-        let rollNo = await getUniqueRollNo(studentClass, studentSection, schoolId);
+         // Calculate the roll number based on the count of existing students in the class and section
+         let rollNo;
+         try {
+           rollNo = await getUniqueRollNo(studentClass, studentSection, schoolId);
+         } catch (err) {
+           errors.push({ studentEmail, error: "Failed to generate unique roll number" });
+           continue; // Skip this student and move to the next
+         }
 
         const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
 
