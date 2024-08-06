@@ -2683,8 +2683,12 @@ exports.createBulkStudentParent = async (req, res) => {
         }
 
         // Check if student or parent already exists in the same school
+        console.log("Checking for existing student with email:", studentEmail, "and schoolId:", schoolId);
         const studentExist = await NewStudentModel.findOne({ email: studentEmail, schoolId });
+
+        console.log("Checking for existing parent with email:", parentEmail, "and schoolId:", schoolId);
         const parentExist = await ParentModel.findOne({ email: parentEmail, schoolId });
+
 
         if (studentExist || parentExist) {
           throw new Error("Student or Parent already exists with this email in the same school");

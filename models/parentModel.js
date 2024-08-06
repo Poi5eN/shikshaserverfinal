@@ -75,6 +75,8 @@ const parentSchema = new mongoose.Schema({
     }
 })
 
+parentSchema.index({ email: 1, schoolId: 1 }, { unique: true });
+
 const ParentModel = mongoose.model("ParentModel", parentSchema);
 
 module.exports = ParentModel;

@@ -127,6 +127,8 @@ const studentSchema = new mongoose.Schema({
     }
 });
 
+studentSchema.index({ email: 1, schoolId: 1 }, { unique: true });
+
 const NewStudentModel = new mongoose.model("NewStudentModel", studentSchema);
 
 module.exports = NewStudentModel;
