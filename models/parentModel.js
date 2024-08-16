@@ -5,14 +5,12 @@ const parentSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    studentId: {
-        type: String,
+    studentIds: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "NewStudentModel",
         required: true
-    },
-    studentName: {
-        type: String,
-        required: true
-    },
+    }],
+    studentNames: [String],
     fullName: {
         type: String,
         required: [true, "Please Enter Father Name"]
@@ -63,17 +61,15 @@ const parentSchema = new mongoose.Schema({
     },
     income: {
         type: Number,
-       
     },
     qualification: {
         type: String,
-       
     },
     createdAt: {
         type: Date,
         default: Date.now()
     }
-})
+});
 
 parentSchema.index({ email: 1, schoolId: 1 }, { unique: true });
 
