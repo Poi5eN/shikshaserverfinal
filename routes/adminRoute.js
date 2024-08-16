@@ -58,6 +58,7 @@ router.get('/getParentWithChildren/:parentAdmissionNumber', verifyToken, uploads
 router.put('/updateParent', verifyToken, singleUpload, admin.updateParent);
 router.put('/deactivateParent', verifyToken, admin.deactivateParent);
 router.get('/getAllParents', verifyToken, admin.getAllParents);
+router.get('/getAllParentsWithChildren', verifyToken, admin.getAllParentsWithChildren);
 router.get('/getAllStudents', verifyToken, admin.getAllStudents)
 router.put('/deactivateStudent', verifyToken, admin.deactivateStudent);
 router.put('/updateStudent', verifyToken, singleUpload, admin.updateStudent);

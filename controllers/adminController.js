@@ -4156,6 +4156,76 @@ exports.getAllParents = async (req, res) => {
   }
 };
 
+exports.getAllParentsWithChildren = async (req, res) => {
+  try {
+    const schoolId = req.user.schoolId;
+
+    // Find all parents for the school and populate student details
+    const parents = await ParentModel.find({ schoolId, status: "active" })
+      .populate('studentIds'); // Ensure that studentIds field is populated with student details
+
+    if (parents.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No parents found",
+      });
+    }
+
+    // Format the response
+    const parentsWithChildren = parents.map(parent => ({
+      parent: {
+        schoolId: parent.schoolId,
+        studentIds: parent.studentIds.map(student => student._id.toString()), // Return student IDs
+        studentName: parent.studentIds.map(student => student.fullName).join(', '), // Concatenate all children's names
+        fullName: parent.fullName,
+        motherName: parent.motherName,
+        email: parent.email,
+        contact: parent.contact,
+        admissionNumber: parent.admissionNumber,
+        income: parent.income,
+        qualification: parent.qualification,
+        image: parent.image,
+        status: parent.status,
+        role: parent.role,
+        createdAt: parent.createdAt
+      },
+      children: parent.studentIds.map(student => ({
+        schoolId: student.schoolId,
+        fullName: student.fullName,
+        email: student.email,
+        dateOfBirth: student.dateOfBirth,
+        rollNo: student.rollNo,
+        parentId: student.parentId,
+        status: student.status,
+        gender: student.gender,
+        joiningDate: student.joiningDate,
+        address: student.address,
+        contact: student.contact,
+        class: student.class,
+        section: student.section,
+        country: student.country,
+        subject: student.subject,
+        admissionNumber: student.admissionNumber,
+        image: student.image,
+        createdAt: student.createdAt
+      }))
+    }));
+
+    res.status(200).json({
+      success: true,
+      message: "List of parents with their children",
+      data: parentsWithChildren,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error retrieving parents with children",
+      error: error.message,
+    });
+  }
+};
+
+
 exports.getAllStudents = async (req, res) => {
   try {
     const { email, studentClass, section } = req.query;
