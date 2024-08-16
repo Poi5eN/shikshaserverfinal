@@ -1067,6 +1067,54 @@ exports.createOrUpdateFeePayment = async (req, res) => {
 };
 
 
+// exports.getFeeStatus = async (req, res) => {
+//     try {
+//         const { admissionNumber } = req.query;
+
+//         let filter = {
+//             ...(admissionNumber ? { admissionNumber: admissionNumber } : {}),
+//             schoolId: req.user.schoolId
+//         };
+
+//         const feesData = await FeeStatus.find(filter).lean(); // Use .lean() to convert Mongoose documents to plain JavaScript objects
+
+//         if (feesData.length === 0) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "No fee status found for the provided filter",
+//                 data: []
+//             });
+//         }
+
+//         // Fetch student details for each fee status
+//         const studentDetailsPromises = feesData.map(async (feeStatus) => {
+//             const studentData = await NewStudentModel.findOne({ admissionNumber: feeStatus.admissionNumber })
+//                 .select('fullName admissionNumber class fatherName address contact image') // Select only the required fields
+//                 .lean(); // Use .lean() to convert Mongoose documents to plain JavaScript objects
+
+//             return {
+//                 ...feeStatus,
+//                 studentDetails: studentData
+//             };
+//         });
+
+//         const feesDataWithStudentDetails = await Promise.all(studentDetailsPromises);
+
+//         res.status(200).json({
+//             success: true,
+//             message: "Fees Data Successfully Get",
+//             data: feesDataWithStudentDetails
+//         });
+
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: "Fees Details is not get Successfully",
+//             error: error.message
+//         });
+//     }
+// };
+
 exports.getFeeStatus = async (req, res) => {
     try {
         const { admissionNumber } = req.query;
@@ -1076,7 +1124,7 @@ exports.getFeeStatus = async (req, res) => {
             schoolId: req.user.schoolId
         };
 
-        const feesData = await FeeStatus.find(filter).lean(); // Use .lean() to convert Mongoose documents to plain JavaScript objects
+        const feesData = await FeeStatus.find(filter).lean();
 
         if (feesData.length === 0) {
             return res.status(404).json({
@@ -1089,11 +1137,24 @@ exports.getFeeStatus = async (req, res) => {
         // Fetch student details for each fee status
         const studentDetailsPromises = feesData.map(async (feeStatus) => {
             const studentData = await NewStudentModel.findOne({ admissionNumber: feeStatus.admissionNumber })
-                .select('fullName admissionNumber class fatherName address contact image') // Select only the required fields
-                .lean(); // Use .lean() to convert Mongoose documents to plain JavaScript objects
+                .select('fullName admissionNumber class fatherName address contact image')
+                .lean();
+
+            // Update the feeHistory array with dueAmount
+            const updatedFeeHistory = feeStatus.feeHistory.map((feeEntry) => {
+                const monthlyDue = feeStatus.monthlyDues.find(due => due.month === feeEntry.month);
+                const totalAmount = monthlyDue ? monthlyDue.dueAmount + feeEntry.paidAmount : feeEntry.paidAmount;
+                const dueAmount = totalAmount - feeEntry.paidAmount;
+
+                return {
+                    ...feeEntry,
+                    dueAmount
+                };
+            });
 
             return {
                 ...feeStatus,
+                feeHistory: updatedFeeHistory, // Include the updated feeHistory with dueAmount
                 studentDetails: studentData
             };
         });
@@ -1114,6 +1175,7 @@ exports.getFeeStatus = async (req, res) => {
         });
     }
 };
+
 
 
 exports.feeIncomeMonths = async (req, res) => {
