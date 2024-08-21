@@ -432,13 +432,14 @@ exports.deleteFees = async (req, res) => {
 
 exports.createAdditionalFee = async (req, res) => {
   try {
-    const { name, feeType, amount } = req.body;
+    const { className, name, feeType, amount } = req.body;
 
     const feesExist = await FeeStructure.findOne({
       schoolId: req.user.schoolId,
       additional: true,
       name,
       feeType,
+      className,
     });
 
     if (feesExist) {
@@ -453,6 +454,7 @@ exports.createAdditionalFee = async (req, res) => {
       name,
       feeType,
       amount,
+      className,
       additional: true,
     });
     await feeStructure.save();
@@ -484,6 +486,39 @@ exports.getAllAdditionalFee = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+exports.getAllFees = async (req, res) => {
+  try {
+    const { _id, className } = req.query;
+
+    const filter = {
+      ...(_id ? { _id: _id } : {}),
+      ...(className ? { className: className } : {}),
+    };
+
+    // Fetch both regular and additional fees
+    const regularFees = await FeeStructure.find({
+      schoolId: req.user.schoolId,
+      ...filter,
+      additional: false,
+    });
+
+    const additionalFees = await FeeStructure.find({
+      schoolId: req.user.schoolId,
+      ...filter,
+      additional: true,
+    });
+
+    // Merge both regular and additional fees into one array
+    const allFees = [...regularFees, ...additionalFees];
+
+    res.status(200).json(allFees);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 // exports.updateAdditionalFee = async (req, res) => {
 //   try {

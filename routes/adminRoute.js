@@ -16,6 +16,7 @@ router.get('/getTeachers', verifyToken, admin.getAllTeachers)
 
 router.post('/createFees', verifyToken, admin.createFeeStructure)
 router.get('/getFees', verifyToken, admin.getAllFeeStructures)
+router.get('/getAllFees', verifyToken, admin.getAllFees)
 router.put('/updateFees/:feeStructureId', verifyToken, admin.updateFees)
 router.delete('/deleteFees/:feeStructureId', verifyToken, admin.deleteFees)
 router.post('/issueBook', verifyToken, admin.issueBook);
