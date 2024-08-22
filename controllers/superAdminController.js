@@ -69,3 +69,30 @@ exports.createAdmin = async (req, res) => {
     res.status(500).send({ message: err.message });
   }
 };
+
+
+// In your superadmin controller file
+
+exports.getAllAdmins = async (req, res) => {
+  try {
+    const admins = await Collection.find(); // Fetch all admins
+
+    if (!admins) {
+      return res.status(404).json({
+        success: false,
+        message: "No admins found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      admins, // Send all admins
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch admins due to an error",
+      error: error.message,
+    });
+  }
+};
