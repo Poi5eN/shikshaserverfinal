@@ -10,7 +10,7 @@ const corsOptions = {
   origin: [
     'https://eshikshamitralms.netlify.app', 
     'http://localhost:3000',
-    'https://corplyxsuperadmin.netlify.app/' // Add your new frontend URL here
+    'https://corplyxsuperadmin.netlify.app' // Add your new frontend URL here
   ],
   credentials: true, // Include cookies and authentication headers
 };
