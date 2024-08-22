@@ -7,13 +7,16 @@ const app = express()
 
 
 const corsOptions = {
-  origin:['https://eshikshamitralms.netlify.app', 'http://localhost:3000'],
-  // methods: ['GET', 'POST', 'PUT', 'DELETE'],
-
-  // origin: 'http://localhost:3000',
+  origin: [
+    'https://eshikshamitralms.netlify.app', 
+    'http://localhost:3000',
+    'https://corplyxsuperadmin.netlify.app/' // Add your new frontend URL here
+  ],
   credentials: true, // Include cookies and authentication headers
-  // allowedHeaders: 'Content-Type, Authorization'
 };
+
+app.use(cors(corsOptions));
+
 
 
 app.use(cors(corsOptions));
