@@ -53,6 +53,10 @@ const studentSchema = new mongoose.Schema({
     "parentId": {
         type: String,
     },
+    parentAdmissionNumber: {
+        type: String,
+        required: false,
+      },
     "status":{
        type: String,
        required: true,
@@ -101,7 +105,17 @@ const studentSchema = new mongoose.Schema({
         type: String,
         unique: true,
         required: true,
-        match: /^[A-Z]{3}\d{3}$/
+        validate: {
+            validator: function(v) {
+                // Validate the pattern only if it's auto-generated
+                return this.isGenerated ? /^[A-Z]{3}\d{3}$/.test(v) : true;
+            },
+            message: "Admission number must follow the pattern: 3 uppercase letters followed by 3 digits (e.g., ABC123)"
+        }
+    },
+    isGenerated: {
+        type: Boolean,
+        default: false // This will indicate if the admission number was generated
     },
     religion: {
         type: String
