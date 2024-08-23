@@ -312,15 +312,18 @@ exports.createFeeStructure = async (req, res) => {
   try {
     const { className, feeType, amount } = req.body;
 
+    // Check if a regular fee already exists for this class and fee type
     const feesExist = await FeeStructure.findOne({
       schoolId: req.user.schoolId,
       className,
+      feeType,
+      additional: false, // Only check for regular fees
     });
 
     if (feesExist) {
       return res.status(400).json({
         success: false,
-        message: "Fees already exist",
+        message: "Regular fee already exists for this class and fee type",
       });
     }
 
@@ -329,6 +332,7 @@ exports.createFeeStructure = async (req, res) => {
       className,
       feeType,
       amount,
+      additional: false, // Ensure this is marked as a regular fee
     });
 
     await feeStructure.save();
@@ -341,6 +345,7 @@ exports.createFeeStructure = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
 
 // Get fee structures for all classes in a school
 exports.getAllFeeStructures = async (req, res) => {
@@ -434,37 +439,40 @@ exports.createAdditionalFee = async (req, res) => {
   try {
     const { className, name, feeType, amount } = req.body;
 
+    // Check if an additional fee already exists for this class, fee type, and name
     const feesExist = await FeeStructure.findOne({
       schoolId: req.user.schoolId,
-      additional: true,
+      className,
       name,
       feeType,
-      className,
+      additional: true, // Only check for additional fees
     });
 
     if (feesExist) {
       return res.status(400).json({
         success: false,
-        message: "Fees already exist",
+        message: "Additional fee already exists for this class, fee type, and name",
       });
     }
 
     const feeStructure = new FeeStructure({
       schoolId: req.user.schoolId,
+      className,
       name,
       feeType,
       amount,
-      className,
-      additional: true,
+      additional: true, // Ensure this is marked as an additional fee
     });
+
     await feeStructure.save();
 
-    res.status(201).json({ message: "Fee structure created successfully" });
+    res.status(201).json({ message: "Additional fee structure created successfully" });
   } catch (error) {
     console.error("error", error);
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // Get fee structures for all classes in a school
 exports.getAllAdditionalFee = async (req, res) => {
