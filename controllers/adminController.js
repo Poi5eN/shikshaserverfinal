@@ -2517,6 +2517,7 @@ exports.createStudentParent = async (req, res) => {
       pincode,
       state,
       city,
+      studentAdmissionNumber, // Added new field for student admission number
       parentAdmissionNumber
     } = req.body;
 
@@ -2581,7 +2582,9 @@ exports.createStudentParent = async (req, res) => {
       parentImageResult = await cloudinary.uploader.upload(parentFileUri.content);
     }
 
-    const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
+    // Use the provided studentAdmissionNumber or generate a new one if not provided
+    const studentAdmissionNumberToUse = studentAdmissionNumber || await generateAdmissionNumber(NewStudentModel);
+
     console.log('student data created')
     const studentData = await NewStudentModel.create({
       schoolId: schoolId,
@@ -2595,12 +2598,12 @@ exports.createStudentParent = async (req, res) => {
       address: studentAddress,
       contact: studentContact,
       class: studentClass,
-      fatherName: fatherName? fatherName: parentExist.fullName,
-      motherName: motherName? motherName : parentExist.motherName ,
+      fatherName: fatherName ? fatherName : parentExist?.fullName,
+      motherName: motherName ? motherName : parentExist?.motherName,
       section: studentSection,
       country: studentCountry,
       subject: studentSubject,
-      admissionNumber: studentAdmissionNumber,
+      admissionNumber: studentAdmissionNumberToUse,
       religion: religion,
       caste: caste,
       nationality: nationality,
@@ -2647,14 +2650,13 @@ exports.createStudentParent = async (req, res) => {
     }
 
     if (parentData) {
-      studentData.parentId = parentData._id? parentData._id : parentExist._id  ;
+      studentData.parentId = parentData._id ? parentData._id : parentExist._id;
       await studentData.save();
 
       if (!parentAdmissionNumber) {
-        const parentEmailContent = `
-          <p>Your EmailID: ${parentEmail}</p>
-          <p>Your Password: ${parentPassword}</p>
-        `;
+        const parentEmailContent = 
+          `<p>Your EmailID: ${parentEmail}</p>
+           <p>Your Password: ${parentPassword}</p>`;
         await sendEmail(parentEmail, "Parent Login Credentials", parentEmailContent);
       }
     } else {
@@ -2666,16 +2668,17 @@ exports.createStudentParent = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Student and its Parent Created and also send message to Student email id and Parent email Id",
+      message: "Student and its Parent Created and also sent message to Student email id and Parent email Id",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Student and Parent is not registered due to error",
+      message: "Student and Parent are not registered due to error",
       error: error.message,
     });
   }
 };
+
 
 
 
@@ -2903,10 +2906,11 @@ exports.createBulkStudentParent = async (req, res) => {
         city,
         studentImage,
         parentImage,
-        rollNo
+        rollNo,
+        studentAdmissionNumber // Added optional field
       } = student;
 
-      const parsedIncome = parseFloat(parentIncome.replace(/[^0-9.-]+/g, ''));
+      const parsedIncome = parentIncome ? parseFloat(parentIncome.replace(/[^0-9.-]+/g, '')) : undefined;
 
       try {
         if (!studentEmail || !studentPassword || !parentEmail || !parentPassword) {
@@ -2919,7 +2923,6 @@ exports.createBulkStudentParent = async (req, res) => {
 
         console.log("Checking for existing parent with email:", parentEmail, "and schoolId:", schoolId);
         const parentExist = await ParentModel.findOne({ email: parentEmail, schoolId });
-
 
         if (studentExist || parentExist) {
           throw new Error("Student or Parent already exists with this email in the same school");
@@ -2940,7 +2943,8 @@ exports.createBulkStudentParent = async (req, res) => {
           parentImageResult = await cloudinary.uploader.upload(parentImage);
         }
 
-        const studentAdmissionNumber = await generateAdmissionNumber(NewStudentModel);
+        // Use provided studentAdmissionNumber or generate a new one if not provided
+        const studentAdmissionNumberToUse = studentAdmissionNumber || await generateAdmissionNumber(NewStudentModel);
 
         const studentData = await NewStudentModel.create({
           schoolId,
@@ -2959,7 +2963,7 @@ exports.createBulkStudentParent = async (req, res) => {
           section: studentSection,
           country: studentCountry,
           subject: studentSubject,
-          admissionNumber: studentAdmissionNumber,
+          admissionNumber: studentAdmissionNumberToUse,
           religion,
           caste,
           nationality,
@@ -3032,6 +3036,7 @@ exports.createBulkStudentParent = async (req, res) => {
     });
   }
 };
+
 
 
 
