@@ -1416,9 +1416,16 @@ exports.createOrUpdateFeePayment = async (req, res) => {
             year,
         });
 
+        if (!Array.isArray(months) || months.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Months array is required and cannot be empty",
+            });
+        }
+
         const feeHistoryEntry = {
             months,
-            paidAmount: regularFee.paidAmount,
+            paidAmount: parseInt(regularFee.paidAmount),
             paymentMode,
             date: new Date(date),
             additionalFee: additionalFee.map(fee => ({
@@ -1430,7 +1437,7 @@ exports.createOrUpdateFeePayment = async (req, res) => {
 
         if (existingFeePayment) {
             // Check for duplicate months in fee history
-            const existingMonths = existingFeePayment.feeHistory.map(entry => entry.months[0]); // Assuming single month per entry
+            const existingMonths = existingFeePayment.feeHistory.map(entry => entry.months?.[0]); // Assuming single month per entry
             const duplicateMonths = months.filter(month => existingMonths.includes(month));
 
             if (duplicateMonths.length > 0) {
@@ -1458,8 +1465,10 @@ exports.createOrUpdateFeePayment = async (req, res) => {
 
             // Ensure additional fees are deducted from the total dues
             additionalFee.forEach(fee => {
-                const additionalFeeDue = additionalFees.find(f => f.feeName === fee.feeName).amount;
-                existingFeePayment.dues += additionalFeeDue - fee.paidAmount;
+                const additionalFeeDue = additionalFees.find(f => f.feeName === fee.feeName)?.amount;
+                if (additionalFeeDue !== undefined) {
+                    existingFeePayment.dues += additionalFeeDue - fee.paidAmount;
+                }
             });
 
             // Recalculate the total dues
@@ -1492,8 +1501,10 @@ exports.createOrUpdateFeePayment = async (req, res) => {
 
             // Include additional fees in dues calculation
             additionalFee.forEach(fee => {
-                const additionalFeeDue = additionalFees.find(f => f.feeName === fee.feeName).amount;
-                newFeePayment.dues += additionalFeeDue - fee.paidAmount;
+                const additionalFeeDue = additionalFees.find(f => f.feeName === fee.feeName)?.amount;
+                if (additionalFeeDue !== undefined) {
+                    newFeePayment.dues += additionalFeeDue - fee.paidAmount;
+                }
             });
 
             // Calculate the total dues
@@ -1514,6 +1525,7 @@ exports.createOrUpdateFeePayment = async (req, res) => {
         });
     }
 };
+
 
 
 
