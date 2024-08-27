@@ -145,6 +145,28 @@
 
 const mongoose = require('mongoose');
 
+const regularFeeSchema = new mongoose.Schema({
+    paidAmount: {
+        type: Number,
+        required: true
+    },
+    month: {
+        type: String,
+        required: true
+    }
+});
+
+const additionalFeeSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true
+    },
+    paidAmount: {
+        type: Number,
+        required: true
+    }
+});
+
 const feeHistorySchema = new mongoose.Schema({
     date: {
         type: Date,
@@ -154,25 +176,37 @@ const feeHistorySchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    month: {
+    regularFees: [regularFeeSchema],
+    additionalFees: [additionalFeeSchema],
+    paymentMode: {
         type: String,
         required: true
     },
-    paidAmount: {
-        type: Number,  // Changed from String to Number
+    transactionId: {
+        type: String
+    },
+    previousDues: {
+        type: Number,
+        default: 0
+    },
+    remark: {
+        type: String
+    },
+    totalAmountPaid: {
+        type: Number,
+        required: true
+    },
+    totalDues: {
+        type: Number,
         required: true
     },
     feeReceiptNumber: {
         type: String,
         required: true
-    },
-    paymentMode: {
-        type: String,
-        required: true
     }
 });
 
-const monthlyDuesSchema = new mongoose.Schema({
+const monthlyRegularDuesSchema = new mongoose.Schema({
     month: {
         type: String,
         required: true
@@ -180,10 +214,33 @@ const monthlyDuesSchema = new mongoose.Schema({
     dueAmount: {
         type: Number,
         required: true
+    },
+    paidAmount: {
+        type: Number,
+        required: true
     }
 });
 
-const feeStatus = new mongoose.Schema({
+const monthlyAdditionalDuesSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true
+    },
+    month: {
+        type: String,
+        required: true
+    },
+    dueAmount: {
+        type: Number,
+        required: true
+    },
+    paidAmount: {
+        type: Number,
+        required: true
+    }
+});
+
+const feeStatusSchema = new mongoose.Schema({
     schoolId: {
         type: String,
         required: true
@@ -201,10 +258,16 @@ const feeStatus = new mongoose.Schema({
         default: 0
     },
     feeHistory: [feeHistorySchema],
-    monthlyDues: [monthlyDuesSchema]
+    monthlyRegularDues: [monthlyRegularDuesSchema],
+    monthlyAdditionalDues: [monthlyAdditionalDuesSchema],
+    monthlyDues: {
+        type: Number,
+        required: true
+    }
 });
 
-module.exports = mongoose.model("feeStatus", feeStatus);
+module.exports = mongoose.model("FeeStatus", feeStatusSchema);
+
 
 
 
