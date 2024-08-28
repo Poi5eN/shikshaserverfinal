@@ -1957,29 +1957,6 @@ exports.createOrUpdateFeePayment = async (req, res) => {
     }
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 exports.getFeeStatus = async (req, res) => {
     try {
         const { admissionNumber } = req.query;
@@ -2005,21 +1982,8 @@ exports.getFeeStatus = async (req, res) => {
                 .select('fullName admissionNumber class fatherName address contact image')
                 .lean();
 
-            // Update the feeHistory array with dueAmount
-            const updatedFeeHistory = feeStatus.feeHistory.map((feeEntry) => {
-                const monthlyDue = feeStatus.monthlyDues.find(due => due.month === feeEntry.month);
-                const totalAmount = monthlyDue ? monthlyDue.dueAmount + feeEntry.paidAmount : feeEntry.paidAmount;
-                const dueAmount = totalAmount - feeEntry.paidAmount;
-
-                return {
-                    ...feeEntry,
-                    dueAmount
-                };
-            });
-
             return {
                 ...feeStatus,
-                feeHistory: updatedFeeHistory, // Include the updated feeHistory with dueAmount
                 studentDetails: studentData
             };
         });
@@ -2050,8 +2014,6 @@ exports.feeIncomeMonths = async (req, res) => {
         // Initialize the array with 12 zeros for each month
         let arr = new Array(12).fill(0);
 
-        console.log("feesData.length", feesData.length);
-
         const monthToIndex = {
             'January': 0,
             'February': 1,
@@ -2067,21 +2029,14 @@ exports.feeIncomeMonths = async (req, res) => {
             'December': 11
         };
 
-        for (let j = 0; j < feesData.length; j++) {
-            console.log("feesData[j].feeHistory.length", feesData[j].feeHistory.length);
-            for (let k = 0; k < feesData[j].feeHistory.length; k++) {
-                const feeHistoryEntry = feesData[j].feeHistory[k];
-                console.log("feeHistoryEntry:", feeHistoryEntry);
-
+        for (const feeStatus of feesData) {
+            for (const feeHistoryEntry of feeStatus.feeHistory) {
                 // Convert month name to an index (0-11)
                 const monthIndex = monthToIndex[feeHistoryEntry.month];
-                console.log(`Month index for ${feeHistoryEntry.month}:`, monthIndex + 1);
-
-                arr[monthIndex] += Number(feeHistoryEntry.paidAmount);
+                
+                arr[monthIndex] += Number(feeHistoryEntry.totalAmountPaid); // Accumulate totalAmountPaid
             }
         }
-
-        console.log(arr);
 
         res.status(200).json({
             success: true,
@@ -2096,6 +2051,7 @@ exports.feeIncomeMonths = async (req, res) => {
         });
     }
 };
+
 
 
 exports.getFeeHistory = async (req, res) => {
@@ -2116,14 +2072,14 @@ exports.getFeeHistory = async (req, res) => {
             // Check if studentData exists before using it
             if (studentData) {
                 feeStatus.feeHistory.forEach(history => {
-                    const monthDue = feeStatus.monthlyDues.find(md => md.month === history.month);
                     feeHistory.push({
                         admissionNumber: studentData.admissionNumber,
                         studentName: studentData.fullName,
                         studentClass: studentData.class,
                         feeReceiptNumber: history.feeReceiptNumber,
                         paymentMode: history.paymentMode,
-                        dues: monthDue ? monthDue.dueAmount : 0, // Get dues for the specific month
+                        dues: history.regularFees.reduce((sum, fee) => sum + fee.dueAmount, 0) + 
+                              history.additionalFees.reduce((sum, fee) => sum + fee.dueAmount, 0), // Calculate total dues
                         ...history._doc
                     });
                 });
@@ -2150,118 +2106,121 @@ exports.getFeeHistory = async (req, res) => {
 };
 
 
+
 // EDIT FEESTATUS CONTROLLER
 exports.editFeeStatus = async (req, res) => {
     try {
-      const { receiptNumber } = req.params;
-      const updateData = req.body;
-  
-      // Find and update the fee status
-      const feeStatus = await FeeStatus.findOneAndUpdate(
-        { "feeHistory.feeReceiptNumber": receiptNumber },
-        { $set: { "feeHistory.$": updateData } },
-        { new: true }
-      );
-  
-      if (!feeStatus) {
-        return res.status(404).json({
-          success: false,
-          message: "Fee status not found",
+        const { receiptNumber } = req.params;
+        const updateData = req.body;
+
+        // Find and update the fee status
+        const feeStatus = await FeeStatus.findOneAndUpdate(
+            { "feeHistory.feeReceiptNumber": receiptNumber },
+            { $set: { "feeHistory.$": updateData } },
+            { new: true }
+        );
+
+        if (!feeStatus) {
+            return res.status(404).json({
+                success: false,
+                message: "Fee status not found",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Fee status updated successfully",
+            data: feeStatus,
         });
-      }
-  
-      res.status(200).json({
-        success: true,
-        message: "Fee status updated successfully",
-        data: feeStatus,
-      });
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "Failed to update fee status due to an error.",
-        error: error.message,
-      });
+        res.status(500).json({
+            success: false,
+            message: "Failed to update fee status due to an error.",
+            error: error.message,
+        });
     }
-  };
+};
+
   
 // DELETE FEESTATUS CONTROLLER
 exports.deleteFeeStatus = async (req, res) => {
     try {
-      const { receiptNumber } = req.params;
-  
-      // Find and update the fee status
-      const feeStatus = await FeeStatus.findOneAndUpdate(
-        { "feeHistory.feeReceiptNumber": receiptNumber },
-        { $pull: { feeHistory: { feeReceiptNumber: receiptNumber } } },
-        { new: true }
-      );
-  
-      if (!feeStatus) {
-        return res.status(404).json({
-          success: false,
-          message: "Fee status not found",
-        });
-      }
-  
-      res.status(200).json({
-        success: true,
-        message: "Fee status deleted successfully",
-        data: feeStatus,
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "Failed to delete fee status due to an error.",
-        error: error.message,
-      });
-    }
-  };
-  
+        const { receiptNumber } = req.params;
 
-exports.getFeeStatus = async (req, res) => {
-    try {
-        const { admissionNumber } = req.query;
+        // Find and update the fee status
+        const feeStatus = await FeeStatus.findOneAndUpdate(
+            { "feeHistory.feeReceiptNumber": receiptNumber },
+            { $pull: { feeHistory: { feeReceiptNumber: receiptNumber } } },
+            { new: true }
+        );
 
-        let filter = {
-            ...(admissionNumber ? { admissionNumber: admissionNumber } : {}),
-            schoolId: req.user.schoolId
-        };
-
-        const feesData = await FeeStatus.find(filter).lean(); // Use .lean() to convert Mongoose documents to plain JavaScript objects
-
-        if (feesData.length === 0) {
+        if (!feeStatus) {
             return res.status(404).json({
                 success: false,
-                message: "No fee status found for the provided filter",
-                data: []
+                message: "Fee status not found",
             });
         }
 
-        // Fetch student details for each fee status
-        const studentDetailsPromises = feesData.map(async (feeStatus) => {
-            const studentData = await NewStudentModel.findOne({ admissionNumber: feeStatus.admissionNumber })
-                .select('fullName admissionNumber class fatherName address contact image') // Select only the required fields
-                .lean(); // Use .lean() to convert Mongoose documents to plain JavaScript objects
-
-            return {
-                ...feeStatus,
-                studentDetails: studentData
-            };
-        });
-
-        const feesDataWithStudentDetails = await Promise.all(studentDetailsPromises);
-
         res.status(200).json({
             success: true,
-            message: "Fees Data Successfully Get",
-            data: feesDataWithStudentDetails
+            message: "Fee status deleted successfully",
+            data: feeStatus,
         });
-
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: "Fees Details is not get Successfully",
-            error: error.message
+            message: "Failed to delete fee status due to an error.",
+            error: error.message,
         });
     }
 };
+
+  
+
+// exports.getFeeStatus = async (req, res) => {
+//     try {
+//         const { admissionNumber } = req.query;
+
+//         let filter = {
+//             ...(admissionNumber ? { admissionNumber: admissionNumber } : {}),
+//             schoolId: req.user.schoolId
+//         };
+
+//         const feesData = await FeeStatus.find(filter).lean(); // Use .lean() to convert Mongoose documents to plain JavaScript objects
+
+//         if (feesData.length === 0) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "No fee status found for the provided filter",
+//                 data: []
+//             });
+//         }
+
+//         // Fetch student details for each fee status
+//         const studentDetailsPromises = feesData.map(async (feeStatus) => {
+//             const studentData = await NewStudentModel.findOne({ admissionNumber: feeStatus.admissionNumber })
+//                 .select('fullName admissionNumber class fatherName address contact image') // Select only the required fields
+//                 .lean(); // Use .lean() to convert Mongoose documents to plain JavaScript objects
+
+//             return {
+//                 ...feeStatus,
+//                 studentDetails: studentData
+//             };
+//         });
+
+//         const feesDataWithStudentDetails = await Promise.all(studentDetailsPromises);
+
+//         res.status(200).json({
+//             success: true,
+//             message: "Fees Data Successfully Get",
+//             data: feesDataWithStudentDetails
+//         });
+
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: "Fees Details is not get Successfully",
+//             error: error.message
+//         });
+//     }
+// };
