@@ -153,6 +153,14 @@ const regularFeeHistorySchema = new mongoose.Schema({
     paidAmount: {
         type: Number,
         required: true
+    },
+    dueAmount: {
+        type: Number, // Added
+        required: true
+    },
+    status: {
+        type: String, // Added
+        required: true
     }
 });
 
@@ -163,6 +171,14 @@ const additionalFeeHistorySchema = new mongoose.Schema({
     },
     paidAmount: {
         type: Number,
+        required: true
+    },
+    dueAmount: {
+        type: Number, // Added
+        required: true
+    },
+    status: {
+        type: String, // Added
         required: true
     }
 });
@@ -188,22 +204,18 @@ const feeHistorySchema = new mongoose.Schema({
     },
     transactionId: {
         type: String,
-        // required: true
     },
     previousDues: {
         type: Number,
-        // required: true
     },
     remark: {
         type: String
     },
     totalAmountPaid: {
         type: Number,
-        // required: true
     },
     totalDues: {
         type: Number,
-        // required: true
     }
 });
 
@@ -212,8 +224,16 @@ const monthlyRegularDuesSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    dueAmount: {
+    paidAmount: {
         type: Number,
+        // required: true
+    },
+    dueAmount: {
+        type: Number, // Added
+        required: true
+    },
+    status: {
+        type: String, // Added
         required: true
     }
 });
@@ -223,8 +243,16 @@ const monthlyAdditionalDuesSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    dueAmount: {
+    paidAmount: {
         type: Number,
+        // required: true
+    },
+    dueAmount: {
+        type: Number, // Added
+        required: true
+    },
+    status: {
+        type: String, // Added
         required: true
     }
 });
