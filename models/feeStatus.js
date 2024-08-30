@@ -145,6 +145,7 @@
 
 const mongoose = require('mongoose');
 
+// Schema for regular fee history within fee history
 const regularFeeHistorySchema = new mongoose.Schema({
     month: {
         type: String,
@@ -155,38 +156,46 @@ const regularFeeHistorySchema = new mongoose.Schema({
         required: true
     },
     dueAmount: {
-        type: Number, // Added
+        type: Number,
         required: true
     },
     status: {
-        type: String, // Added
+        type: String,
         required: true
     }
 });
 
+// Schema for additional fee history within fee history
 const additionalFeeHistorySchema = new mongoose.Schema({
     name: {
         type: String,
         required: true
+    },
+    month: {
+        type: String,
+        // required: true
     },
     paidAmount: {
         type: Number,
         required: true
     },
     dueAmount: {
-        type: Number, // Added
+        type: Number,
         required: true
     },
     status: {
-        type: String, // Added
+        type: String,
         required: true
     }
 });
 
+// Schema for fee history
 const feeHistorySchema = new mongoose.Schema({
     date: {
         type: Date,
-        required: true
+        required: true,
+        default: Date.now,
+        get: (date) => new Date(date).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
     },
     status: {
         type: String,
@@ -217,8 +226,9 @@ const feeHistorySchema = new mongoose.Schema({
     totalDues: {
         type: Number,
     }
-});
+}, { toJSON: { getters: true } });
 
+// Schema for regular dues within monthly dues
 const monthlyRegularDuesSchema = new mongoose.Schema({
     month: {
         type: String,
@@ -229,15 +239,16 @@ const monthlyRegularDuesSchema = new mongoose.Schema({
         // required: true
     },
     dueAmount: {
-        type: Number, // Added
+        type: Number,
         required: true
     },
     status: {
-        type: String, // Added
+        type: String,
         required: true
     }
 });
 
+// Schema for additional dues within monthly dues
 const monthlyAdditionalDuesSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -248,20 +259,22 @@ const monthlyAdditionalDuesSchema = new mongoose.Schema({
         // required: true
     },
     dueAmount: {
-        type: Number, // Added
+        type: Number,
         required: true
     },
     status: {
-        type: String, // Added
+        type: String,
         required: true
     }
 });
 
+// Schema for monthly dues
 const monthlyDuesSchema = new mongoose.Schema({
     regularDues: [monthlyRegularDuesSchema],
     additionalDues: [monthlyAdditionalDuesSchema]
 });
 
+// Main fee status schema
 const feeStatus = new mongoose.Schema({
     schoolId: {
         type: String,
@@ -284,7 +297,3 @@ const feeStatus = new mongoose.Schema({
 });
 
 module.exports = mongoose.model("feeStatus", feeStatus);
-
-
-
-

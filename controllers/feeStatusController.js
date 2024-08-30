@@ -1853,14 +1853,23 @@ exports.createOrUpdateFeePayment = async (req, res) => {
 
             return {
                 name: entry.name,
+                month: entry.month || "N/A", // Allow month to be set for additional fees
                 paidAmount,
                 dueAmount: dueAmount > 0 ? dueAmount : 0,
                 status
             };
         });
 
+        // Format the date from the frontend or use the current date
+        const date = new Date(feeHistory.date || new Date());
+        const formattedDate = date.toLocaleDateString("en-US", {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric'
+        });
+
         const newFeeHistory = {
-            date: new Date(),
+            date: formattedDate, // Use the formatted date
             status: totalDues <= 0 ? "Paid" : "Partial Payment",
             regularFees,
             additionalFees,
@@ -1883,30 +1892,36 @@ exports.createOrUpdateFeePayment = async (req, res) => {
         if (existingFeePayment) {
             existingFeePayment.feeHistory.push(newFeeHistory);
 
-            // Update monthly dues
+            // Update monthly dues for regular fees
             regularFees.forEach(entry => {
                 let regularDue = existingFeePayment.monthlyDues.regularDues.find(due => due.month === entry.month);
                 if (regularDue) {
                     regularDue.dueAmount = entry.dueAmount;
+                    regularDue.paidAmount = (regularDue.paidAmount || 0) + entry.paidAmount; // Update paid amount
                     regularDue.status = entry.status;
                 } else {
                     existingFeePayment.monthlyDues.regularDues.push({
                         month: entry.month,
                         dueAmount: entry.dueAmount,
+                        paidAmount: entry.paidAmount, // Set paid amount
                         status: entry.status
                     });
                 }
             });
 
+            // Update monthly dues for additional fees
             additionalFees.forEach(entry => {
-                let additionalDue = existingFeePayment.monthlyDues.additionalDues.find(due => due.name === entry.name);
+                let additionalDue = existingFeePayment.monthlyDues.additionalDues.find(due => due.name === entry.name && due.month === entry.month);
                 if (additionalDue) {
                     additionalDue.dueAmount = entry.dueAmount;
+                    additionalDue.paidAmount = (additionalDue.paidAmount || 0) + entry.paidAmount; // Update paid amount
                     additionalDue.status = entry.status;
                 } else {
                     existingFeePayment.monthlyDues.additionalDues.push({
                         name: entry.name,
+                        month: entry.month || "N/A",
                         dueAmount: entry.dueAmount,
+                        paidAmount: entry.paidAmount, // Set paid amount
                         status: entry.status
                     });
                 }
@@ -1931,11 +1946,14 @@ exports.createOrUpdateFeePayment = async (req, res) => {
                     regularDues: regularFees.map(entry => ({
                         month: entry.month,
                         dueAmount: entry.dueAmount,
+                        paidAmount: entry.paidAmount, // Set paid amount
                         status: entry.status
                     })),
                     additionalDues: additionalFees.map(entry => ({
                         name: entry.name,
+                        month: entry.month || "N/A",
                         dueAmount: entry.dueAmount,
+                        paidAmount: entry.paidAmount, // Set paid amount
                         status: entry.status
                     }))
                 }
@@ -1956,6 +1974,7 @@ exports.createOrUpdateFeePayment = async (req, res) => {
         });
     }
 };
+
 
 exports.getFeeStatus = async (req, res) => {
     try {
