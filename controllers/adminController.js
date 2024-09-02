@@ -4648,6 +4648,87 @@ exports.deactivateStudent = async (req, res) => {
   }
 };
 
+exports.getDeactivatedStudents = async (req, res) => {
+  try {
+    const { email, studentClass, section } = req.query;
+
+    const filter = {
+      ...(email ? { email: email } : {}),
+      ...(studentClass ? { class: studentClass } : {}),
+      ...(section ? { section: section } : {}),
+    };
+
+    const deactivatedStudents = await NewStudentModel.find({
+      schoolId: req.user.schoolId,
+      status: "deactivated",
+      ...filter,
+    });
+
+    if (deactivatedStudents.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No deactivated students found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "List of all deactivated students",
+      deactivatedStudents,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Unable to retrieve deactivated students due to an error",
+      error: error.message,
+    });
+  }
+};
+
+exports.deleteStudent = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const student = await NewStudentModel.findOne({
+      schoolId: req.user.schoolId,
+      email: email,
+    });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
+    }
+
+    // Remove student from the parent's studentIds array
+    const parent = await ParentModel.findByIdAndUpdate(
+      student.parentId,
+      { $pull: { studentIds: student._id } },
+      { new: true }
+    );
+
+    // If the parent has no more children, delete the parent
+    if (parent && parent.studentIds.length === 0) {
+      await ParentModel.findByIdAndDelete(parent._id);
+    }
+
+    await NewStudentModel.findByIdAndDelete(student._id);
+
+    res.status(200).json({
+      success: true,
+      message: "Student deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Student deletion failed due to an error",
+      error: error.message,
+    });
+  }
+};
+
+
 // exports.updateStudent = async (req, res) => {
 
 //   try {

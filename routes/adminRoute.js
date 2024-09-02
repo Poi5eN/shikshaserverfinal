@@ -63,6 +63,8 @@ router.get('/getAllParentsWithChildren', verifyToken, admin.getAllParentsWithChi
 router.get('/getAllStudents', verifyToken, admin.getAllStudents)
 router.put('/deactivateStudent', verifyToken, admin.deactivateStudent);
 router.put('/updateStudent', verifyToken, singleUpload, admin.updateStudent);
+router.get('/getDeactivatedStudents', verifyToken, singleUpload, admin.getDeactivatedStudents);
+router.delete('/deleteStudent', verifyToken, singleUpload, admin.deleteStudent);
 
 router.get('/getLastYearStudents', verifyToken, admin.getStudentsCreatedAfterAprilOfCurrentYear)
 
