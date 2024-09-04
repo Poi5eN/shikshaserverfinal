@@ -1876,6 +1876,7 @@ exports.createOrUpdateFeePayment = async (req, res) => {
             feeReceiptNumber: generateUniqueFeeReceiptNumber(),
             paymentMode: feeHistory.paymentMode || "N/A",
             transactionId: feeHistory.transactionId || "N/A",
+            totalFeeAmount: feeHistory.totalFeeAmount || 0,
             previousDues: feeHistory.previousDues || 0,
             remark: feeHistory.remark || "",
             totalAmountPaid: totalPaidAmount,
