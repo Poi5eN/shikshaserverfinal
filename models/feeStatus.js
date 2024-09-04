@@ -214,7 +214,7 @@ const feeHistorySchema = new mongoose.Schema({
     transactionId: {
         type: String,
     },
-    transactionId: {
+    totalFeeAmount: {
         type: Number,
     },
     previousDues: {
