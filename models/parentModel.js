@@ -17,7 +17,7 @@ const parentSchema = new mongoose.Schema({
     },
     motherName: {
         type: String,
-        required: [true, "Please Enter Mother Name"]
+        // required: [true, "Please Enter Mother Name"]
     },
     email: {
         type: String,
