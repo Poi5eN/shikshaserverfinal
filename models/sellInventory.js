@@ -29,6 +29,15 @@ const sellInventorySchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    name: {
+        type: String,
+        // required: true,
+    },
+    date: {
+        type: Date,
+        required: true,
+        default: Date.now,
+    },
     createdAt: {
         type: Date,
         default: Date.now()
