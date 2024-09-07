@@ -1,63 +1,64 @@
+const mongoose = require('mongoose');
 const sellInventory = require('../models/sellInventory'); 
 const ItemModel = require('../models/inventoryItemModel'); 
 
 
-// exports.createsellItem = async (req, res) => {
-//     const { itemId, itemName, category, price, sellQuantity, totalAmount } = req.body;
+exports.createsellItem = async (req, res) => {
+    const { itemId, itemName, category, price, sellQuantity, totalAmount } = req.body;
 
-//     try {
+    try {
 
-//         const existingSale = await sellInventory.findOne({
-//             schoolId: req.user.schoolId,
-//             itemId: itemId
-//         });
+        const existingSale = await sellInventory.findOne({
+            schoolId: req.user.schoolId,
+            itemId: itemId
+        });
 
-//         let data;
+        let data;
         
-//         console.log("P2 existingSale", existingSale);
+        console.log("P2 existingSale", existingSale);
        
-//         if (existingSale) {
-//             existingSale.sellQuantity += sellQuantity;
-//             existingSale.totalAmount += totalAmount;
-//            data = await existingSale.save();
-//         } else {
+        if (existingSale) {
+            existingSale.sellQuantity += sellQuantity;
+            existingSale.totalAmount += totalAmount;
+           data = await existingSale.save();
+        } else {
          
-//           data =  await sellInventory.create({
-//                 schoolId: req.user.schoolId,
-//                 itemId,
-//                 itemName,
-//                 category,
-//                 price,
-//                 sellQuantity,
-//                 totalAmount
-//             });
-//         }
-//        let updatedData = await ItemModel.findOneAndUpdate(
-//             { _id: itemId }, 
-//             {
-//                 $inc: {
-//                     quantity: -sellQuantity,
-//                     sellAmount : totalAmount,
-//                     sellQuantity: sellQuantity
-//                 }
-//             },
-//             { new: true } 
-//         );
+          data =  await sellInventory.create({
+                schoolId: req.user.schoolId,
+                itemId,
+                itemName,
+                category,
+                price,
+                sellQuantity,
+                totalAmount
+            });
+        }
+       let updatedData = await ItemModel.findOneAndUpdate(
+            { _id: itemId }, 
+            {
+                $inc: {
+                    quantity: -sellQuantity,
+                    sellAmount : totalAmount,
+                    sellQuantity: sellQuantity
+                }
+            },
+            { new: true } 
+        );
 
-//         return res.status(200).json({
-//             success: true,
-//             message: "Sale recorded successfully",
-//             sellRecord: data,
-//             itemRecord: updatedData
-//         });
-//     } catch (error) {
-//         return res.status(500).json({
-//             success: false,
-//             message: "Error recording sale",
-//             error: error.message,
-//         });
-//     }
-// };
+        return res.status(200).json({
+            success: true,
+            message: "Sale recorded successfully",
+            sellRecord: data,
+            itemRecord: updatedData
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Error recording sale",
+            error: error.message,
+        });
+    }
+};
 
 exports.returnsellItem = async (req, res) => {
     const { itemId, itemName, category, price, returnQuantity, returnAmount } = req.body;
@@ -116,120 +117,151 @@ exports.returnsellItem = async (req, res) => {
     }
 };
 
-exports.createsellItem = async (req, res) => {
-    const { items, totalAmount, name, date } = req.body; // items will be an array of objects containing itemId and sellQuantity
-  
+
+exports.multiItemSell = async (req, res) => {
+    const { items, name, totalAmount, date } = req.body;
+
     try {
-      let sellRecords = [];
-      let itemUpdates = [];
-  
-      for (let i = 0; i < items.length; i++) {
-        const { itemId, sellQuantity } = items[i];
-        
-        // Fetch the item details from the inventory
-        const item = await ItemModel.findOne({ _id: itemId, schoolId: req.user.schoolId });
-        if (!item) {
-          return res.status(404).json({
-            success: false,
-            message: `Item with ID ${itemId} not found`
-          });
-        }
-  
-        const itemTotalPrice = item.price * sellQuantity;
-  
-        // Check if there's an existing sale for this item
-        const existingSale = await sellInventory.findOne({
-          schoolId: req.user.schoolId,
-          itemId: itemId
-        });
-  
-        let sellData;
-        if (existingSale) {
-          existingSale.sellQuantity += sellQuantity;
-          existingSale.totalAmount += itemTotalPrice;
-          sellData = await existingSale.save();
-        } else {
-          sellData = await sellInventory.create({
+        const sellData = {
             schoolId: req.user.schoolId,
-            itemId,
-            itemName: item.itemName,
-            category: item.category,
-            price: item.price,
-            sellQuantity,
-            totalAmount: itemTotalPrice,
-            name, // Add the name field
-            date: date || new Date() // Use provided date or current date
-          });
-        }
-        sellRecords.push(sellData);
-  
-        // Update the inventory item quantity
-        const updatedItem = await ItemModel.findOneAndUpdate(
-          { _id: itemId }, 
-          {
-            $inc: {
-              quantity: -sellQuantity,
-              sellAmount: itemTotalPrice,
-              sellQuantity: sellQuantity
+            items: [],
+            name,
+            totalAmount,
+            date: date || new Date(),
+        };
+
+        for (let item of items) {
+            const { itemId, itemName, category, price, sellQuantity, sellAmount } = item;
+
+            const inventoryItem = await ItemModel.findOne({
+                schoolId: req.user.schoolId,
+                _id: itemId
+            });
+
+            if (!inventoryItem) {
+                return res.status(404).json({
+                    success: false,
+                    message: `Item with ID ${itemId} not found`,
+                });
             }
-          },
-          { new: true }
-        );
-        itemUpdates.push(updatedItem);
-      }
-  
-      return res.status(200).json({
-        success: true,
-        message: "Items sold successfully",
-        sellRecords,
-        itemUpdates
-      });
+
+            if (inventoryItem.quantity < sellQuantity) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Insufficient quantity for item ${inventoryItem.itemName}`,
+                });
+            }
+
+            // Update the inventory item quantity
+            await ItemModel.findOneAndUpdate(
+                { _id: itemId },
+                {
+                    $inc: {
+                        quantity: -sellQuantity
+                    }
+                },
+                { new: true }
+            );
+
+            // Add the item to the sell data
+            sellData.items.push({
+                itemId,
+                itemName,
+                category,
+                price,
+                sellQuantity,
+                sellAmount
+            });
+        }
+
+        // Save all items in a single document
+        const sellRecord = await sellInventory.create(sellData);
+
+        return res.status(200).json({
+            success: true,
+            message: "Items sold successfully",
+            totalAmount,
+            name,
+            date: date || new Date(),
+            sellRecord
+        });
+
     } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: "Error recording sale",
-        error: error.message,
-      });
+        return res.status(500).json({
+            success: false,
+            message: "Error selling items",
+            error: error.message,
+        });
     }
-  };
+};
+
+
+exports.getSalesRecords = async (req, res) => {
+    try {
+        const salesRecords = await sellInventory.find({
+            schoolId: req.user.schoolId
+        });
+
+        if (!salesRecords || salesRecords.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No sales records found"
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Sales records retrieved successfully",
+            data: salesRecords
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Error retrieving sales records",
+            error: error.message
+        });
+    }
+};
+
+
   
 
-  exports.getItemSellHistory = async (req, res) => {
-    const { itemId, startDate, endDate } = req.query;
+//   exports.getItemSellHistory = async (req, res) => {
+//     const { itemId, startDate, endDate } = req.query;
     
-    try {
-      const query = { schoolId: req.user.schoolId };
+//     try {
+//       const query = { schoolId: req.user.schoolId };
   
-      // Filter by itemId if provided
-      if (itemId) {
-        query.itemId = itemId;
-      }
+//       // Filter by itemId if provided
+//       if (itemId) {
+//         query.itemId = itemId;
+//       }
   
-      // Filter by date range if provided
-      if (startDate && endDate) {
-        query.date = { $gte: new Date(startDate), $lte: new Date(endDate) };
-      } else if (startDate) {
-        query.date = { $gte: new Date(startDate) };
-      } else if (endDate) {
-        query.date = { $lte: new Date(endDate) };
-      }
+//       // Filter by date range if provided
+//       if (startDate && endDate) {
+//         query.date = { $gte: new Date(startDate), $lte: new Date(endDate) };
+//       } else if (startDate) {
+//         query.date = { $gte: new Date(startDate) };
+//       } else if (endDate) {
+//         query.date = { $lte: new Date(endDate) };
+//       }
   
-      // Fetch the sell history based on the query
-      const sellHistory = await sellInventory.find(query).sort({ date: -1 });
+//       // Fetch the sell history based on the query
+//       const sellHistory = await sellInventory.find(query).sort({ date: -1 });
   
-      return res.status(200).json({
-        success: true,
-        message: "Item sell history fetched successfully",
-        sellHistory
-      });
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: "Error fetching item sell history",
-        error: error.message
-      });
-    }
-  };
+//       return res.status(200).json({
+//         success: true,
+//         message: "Item sell history fetched successfully",
+//         sellHistory
+//       });
+//     } catch (error) {
+//       return res.status(500).json({
+//         success: false,
+//         message: "Error fetching item sell history",
+//         error: error.message
+//       });
+//     }
+//   };
   
 
 
