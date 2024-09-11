@@ -1879,6 +1879,9 @@ exports.createOrUpdateFeePayment = async (req, res) => {
             totalFeeAmount: feeHistory.totalFeeAmount || 0,
             previousDues: feeHistory.previousDues || 0,
             remark: feeHistory.remark || "",
+            concessionFee: feeHistory.concessionFee || 0,
+            paidAfterConcession: feeHistory.paidAfterConcession || 0,
+            newPaidAmount: feeHistory.newPaidAmount || 0,
             totalAmountPaid: totalPaidAmount,
             totalDues
         };

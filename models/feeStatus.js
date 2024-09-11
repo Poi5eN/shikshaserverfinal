@@ -228,6 +228,18 @@ const feeHistorySchema = new mongoose.Schema({
     },
     totalDues: {
         type: Number,
+    },
+    concessionFee: {
+        type: Number,
+        default: 0
+    },
+    paidAfterConcession: {
+        type: Number,
+        default: 0
+    },
+    newPaidAmount: {
+        type: Number,
+        default: 0
     }
 }, { toJSON: { getters: true } });
 
