@@ -273,6 +273,10 @@ const monthlyAdditionalDuesSchema = new mongoose.Schema({
         type: Number,
         // required: true
     },
+    month:{
+        type: String,
+        required: true
+    },
     dueAmount: {
         type: Number,
         required: true
