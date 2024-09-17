@@ -3257,6 +3257,286 @@ exports.createBulkStudentParent = async (req, res) => {
 
 
 
+// STUDENT PARENT EDIT AND GET API BELOW {NEW}
+exports.editStudentParent = async (req, res) => {
+  try {
+    const studentId = req.params.studentId;
+    const {
+      studentFullName,
+      studentDateOfBirth,
+      studentGender,
+      studentJoiningDate,
+      studentAddress,
+      studentContact,
+      studentCountry,
+      studentSubject,
+      fatherName,
+      motherName,
+      parentContact,
+      parentIncome,
+      parentQualification,
+      religion,
+      caste,
+      nationality,
+      pincode,
+      state,
+      city,
+      parentId
+    } = req.body;
+
+    if (!studentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Student ID is required",
+      });
+    }
+
+    const student = await NewStudentModel.findById(studentId);
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
+    }
+
+    // Ensure fields that cannot be edited are not modified
+    const updateFields = {
+      fullName: studentFullName || student.fullName,
+      dateOfBirth: studentDateOfBirth || student.dateOfBirth,
+      gender: studentGender || student.gender,
+      joiningDate: studentJoiningDate || student.joiningDate,
+      address: studentAddress || student.address,
+      contact: studentContact || student.contact,
+      country: studentCountry || student.country,
+      subject: studentSubject || student.subject,
+      fatherName: fatherName || student.fatherName,
+      motherName: motherName || student.motherName,
+      religion: religion || student.religion,
+      caste: caste || student.caste,
+      nationality: nationality || student.nationality,
+      pincode: pincode || student.pincode,
+      state: state || student.state,
+      city: city || student.city
+    };
+
+    const updatedStudent = await NewStudentModel.findByIdAndUpdate(studentId, updateFields, { new: true });
+
+    if (parentId) {
+      const parent = await ParentModel.findById(parentId);
+      if (!parent) {
+        return res.status(404).json({
+          success: false,
+          message: "Parent not found",
+        });
+      }
+
+      const parentUpdateFields = {
+        fullName: fatherName || parent.fullName,
+        motherName: motherName || parent.motherName,
+        contact: parentContact || parent.contact,
+        income: parentIncome || parent.income,
+        qualification: parentQualification || parent.qualification,
+      };
+
+      await ParentModel.findByIdAndUpdate(parentId, parentUpdateFields, { new: true });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Student and Parent details updated successfully",
+      student: updatedStudent
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error updating student and parent details",
+      error: error.message,
+    });
+  }
+};
+
+
+
+// exports.editStudentParent = async (req, res) => {
+//   try {
+//     const {
+//       studentId,
+//       studentFullName,
+//       studentEmail,
+//       studentPassword,
+//       studentDateOfBirth,
+//       studentGender,
+//       studentJoiningDate,
+//       studentAddress,
+//       studentContact,
+//       studentClass,
+//       studentSection,
+//       studentCountry,
+//       studentSubject,
+//       fatherName,
+//       motherName,
+//       parentEmail,
+//       parentPassword,
+//       parentContact,
+//       parentIncome,
+//       parentQualification,
+//       religion,
+//       caste,
+//       nationality,
+//       pincode,
+//       state,
+//       city,
+//       parentAdmissionNumber
+//     } = req.body;
+
+//     if (!studentId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Student ID is required for editing",
+//       });
+//     }
+
+//     const schoolId = req.user.schoolId;
+
+//     // Find the student to update
+//     const studentData = await NewStudentModel.findOne({ _id: studentId, schoolId });
+//     if (!studentData) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Student not found",
+//       });
+//     }
+
+//     // Find the parent associated with the student
+//     let parentData = null;
+//     if (studentData.parentId) {
+//       parentData = await ParentModel.findOne({ _id: studentData.parentId, schoolId });
+//     }
+
+//     // If parent data needs to be updated, check if parent email or admission number is provided
+//     if (parentEmail || parentAdmissionNumber) {
+//       if (parentEmail) {
+//         parentData = await ParentModel.findOne({ email: parentEmail, schoolId });
+//       } else if (parentAdmissionNumber) {
+//         parentData = await ParentModel.findOne({ admissionNumber: parentAdmissionNumber, schoolId });
+//       }
+
+//       if (parentData) {
+//         if (parentPassword) {
+//           parentData.password = await hashPassword(parentPassword);
+//         }
+//         parentData.fullName = fatherName || parentData.fullName;
+//         parentData.motherName = motherName || parentData.motherName;
+//         parentData.contact = parentContact || parentData.contact;
+//         parentData.income = parentIncome || parentData.income;
+//         parentData.qualification = parentQualification || parentData.qualification;
+//         parentData.image = parentFile ? {
+//           public_id: parentImageResult.public_id,
+//           url: parentImageResult.secure_url,
+//         } : parentData.image;
+
+//         await parentData.save();
+//       } else {
+//         return res.status(404).json({
+//           success: false,
+//           message: "Parent not found",
+//         });
+//       }
+//     }
+
+//     // Update student data
+//     studentData.fullName = studentFullName || studentData.fullName;
+//     studentData.email = studentEmail || studentData.email;
+//     if (studentPassword) {
+//       studentData.password = await hashPassword(studentPassword);
+//     }
+//     studentData.dateOfBirth = studentDateOfBirth || studentData.dateOfBirth;
+//     studentData.gender = studentGender || studentData.gender;
+//     studentData.joiningDate = studentJoiningDate || studentData.joiningDate;
+//     studentData.address = studentAddress || studentData.address;
+//     studentData.contact = studentContact || studentData.contact;
+//     studentData.class = studentClass || studentData.class;
+//     studentData.section = studentSection || studentData.section;
+//     studentData.country = studentCountry || studentData.country;
+//     studentData.subject = studentSubject || studentData.subject;
+//     studentData.religion = religion || studentData.religion;
+//     studentData.caste = caste || studentData.caste;
+//     studentData.nationality = nationality || studentData.nationality;
+//     studentData.pincode = pincode || studentData.pincode;
+//     studentData.state = state || studentData.state;
+//     studentData.city = city || studentData.city;
+//     studentData.image = studentFile ? {
+//       public_id: studentImageResult.public_id,
+//       url: studentImageResult.secure_url,
+//     } : studentData.image;
+
+//     // If parent data has been updated, ensure the student has the correct parent ID
+//     if (parentData) {
+//       studentData.parentId = parentData._id;
+//       studentData.parentAdmissionNumber = parentData.admissionNumber;
+//     }
+
+//     await studentData.save();
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Student and/or Parent details updated successfully",
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: "Error updating Student and/or Parent details",
+//       error: error.message,
+//     });
+//   }
+// };
+// ABOVE IS OLD WHICH TAKES ID AS FIELD AS WELL FOR EDITING
+
+exports.getStudentAndParent = async (req, res) => {
+  try {
+    const studentId = req.params.studentId; // Extract studentId from URL parameters
+
+    if (!studentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Student ID is required",
+      });
+    }
+
+    const schoolId = req.user.schoolId; // Extracted from the authenticated user
+
+    // Find the student
+    const studentData = await NewStudentModel.findOne({ _id: studentId, schoolId })
+      .populate('parentId'); // Populate parent details if the relationship is set up
+
+    if (!studentData) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
+    }
+
+    // Find parent details if not populated
+    const parentData = studentData.parentId ? await ParentModel.findOne({ _id: studentData.parentId, schoolId }) : null;
+
+    res.status(200).json({
+      success: true,
+      student: studentData,
+      parent: parentData,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error retrieving Student and Parent details",
+      error: error.message,
+    });
+  }
+};
+
+
+
+
+
 // exports.createBulkStudentParent = async (req, res) => {
 //   try {
 //     const { registrations } = req.body;
