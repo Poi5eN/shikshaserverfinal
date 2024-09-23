@@ -3381,7 +3381,9 @@ exports.editStudentParent = async (req, res) => {
       pincode,
       state,
       city,
-      parentId
+      parentId,
+      rollNo, // Added rollNo here
+      studentAdmissionNumber // Added admission number here
     } = req.body;
 
     if (!studentId) {
@@ -3399,11 +3401,11 @@ exports.editStudentParent = async (req, res) => {
       });
     }
 
-    // Ensure emails and admission numbers are not editable
-    if (req.body.studentEmail || req.body.parentEmail || req.body.parentAdmissionNumber) {
+    // Ensure parent emails are not editable
+    if (req.body.parentEmail || req.body.parentAdmissionNumber) {
       return res.status(400).json({
         success: false,
-        message: "Cannot edit student or parent email, or parent admission number",
+        message: "Cannot edit parent email or parent admission number",
       });
     }
 
@@ -3429,7 +3431,7 @@ exports.editStudentParent = async (req, res) => {
       parentImageResult = await cloudinary.uploader.upload(parentFileUri.content);
     }
 
-    // Updating student details except uneditable fields
+    // Updating student details including rollNo and studentAdmissionNumber
     const updateStudentFields = {
       fullName: studentFullName || student.fullName,
       password: studentHashPassword || student.password, // update if password is provided
@@ -3442,6 +3444,8 @@ exports.editStudentParent = async (req, res) => {
       section: studentSection || student.section,
       country: studentCountry || student.country,
       subject: studentSubject || student.subject,
+      rollNo: rollNo || student.rollNo, // Update rollNo
+      studentAdmissionNumber: studentAdmissionNumber || student.studentAdmissionNumber, // Update studentAdmissionNumber
       religion: religion || student.religion,
       caste: caste || student.caste,
       nationality: nationality || student.nationality,
