@@ -3354,6 +3354,156 @@ exports.createBulkStudentParent = async (req, res) => {
 //     });
 //   }
 // };
+// exports.editStudentParent = async (req, res) => {
+//   try {
+//     const studentId = req.params.studentId;
+//     const {
+//       studentFullName,
+//       studentPassword,
+//       studentDateOfBirth,
+//       studentGender,
+//       studentJoiningDate,
+//       studentAddress,
+//       studentContact,
+//       studentClass,
+//       studentSection,
+//       studentCountry,
+//       studentSubject,
+//       fatherName,
+//       motherName,
+//       parentPassword,
+//       parentContact,
+//       parentIncome,
+//       parentQualification,
+//       religion,
+//       caste,
+//       nationality,
+//       pincode,
+//       state,
+//       city,
+//       parentId,
+//       rollNo, // Added rollNo here
+//       studentAdmissionNumber // Added admission number here
+//     } = req.body;
+
+//     if (!studentId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Student ID is required",
+//       });
+//     }
+
+//     const student = await NewStudentModel.findById(studentId);
+//     if (!student) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Student not found",
+//       });
+//     }
+
+//     // Ensure parent emails are not editable
+//     if (req.body.parentEmail || req.body.parentAdmissionNumber) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Cannot edit parent email or parent admission number",
+//       });
+//     }
+
+//     // Hash new student password if provided
+//     let studentHashPassword;
+//     if (studentPassword) {
+//       studentHashPassword = await hashPassword(studentPassword);
+//     }
+
+//     // Image upload handling for both student and parent
+//     const studentFile = req.files && req.files[0] ? req.files[0] : null;
+//     const parentFile = req.files && req.files[1] ? req.files[1] : null;
+
+//     let studentImageResult = null;
+//     if (studentFile) {
+//       const studentFileUri = getDataUri(studentFile);
+//       studentImageResult = await cloudinary.uploader.upload(studentFileUri.content);
+//     }
+
+//     let parentImageResult = null;
+//     if (parentFile) {
+//       const parentFileUri = getDataUri(parentFile);
+//       parentImageResult = await cloudinary.uploader.upload(parentFileUri.content);
+//     }
+
+//     // Updating student details including rollNo and studentAdmissionNumber
+//     const updateStudentFields = {
+//       fullName: studentFullName || student.fullName,
+//       password: studentHashPassword || student.password, // update if password is provided
+//       dateOfBirth: studentDateOfBirth || student.dateOfBirth,
+//       gender: studentGender || student.gender,
+//       joiningDate: studentJoiningDate || student.joiningDate,
+//       address: studentAddress || student.address,
+//       contact: studentContact || student.contact,
+//       class: studentClass || student.class,
+//       section: studentSection || student.section,
+//       country: studentCountry || student.country,
+//       subject: studentSubject || student.subject,
+//       rollNo: rollNo || student.rollNo, // Update rollNo
+//       studentAdmissionNumber: studentAdmissionNumber || student.studentAdmissionNumber, // Update studentAdmissionNumber
+//       religion: religion || student.religion,
+//       caste: caste || student.caste,
+//       nationality: nationality || student.nationality,
+//       pincode: pincode || student.pincode,
+//       state: state || student.state,
+//       city: city || student.city,
+//       image: studentImageResult ? {
+//         public_id: studentImageResult.public_id,
+//         url: studentImageResult.secure_url,
+//       } : student.image // retain previous image if not updated
+//     };
+
+//     const updatedStudent = await NewStudentModel.findByIdAndUpdate(studentId, updateStudentFields, { new: true });
+
+//     if (parentId) {
+//       const parent = await ParentModel.findById(parentId);
+//       if (!parent) {
+//         return res.status(404).json({
+//           success: false,
+//           message: "Parent not found",
+//         });
+//       }
+
+//       // Hash new parent password if provided
+//       let parentHashPassword;
+//       if (parentPassword) {
+//         parentHashPassword = await hashPassword(parentPassword);
+//       }
+
+//       const updateParentFields = {
+//         fullName: fatherName || parent.fullName,
+//         motherName: motherName || parent.motherName,
+//         contact: parentContact || parent.contact,
+//         income: parentIncome || parent.income,
+//         qualification: parentQualification || parent.qualification,
+//         password: parentHashPassword || parent.password, // update if password is provided
+//         image: parentImageResult ? {
+//           public_id: parentImageResult.public_id,
+//           url: parentImageResult.secure_url,
+//         } : parent.image // retain previous image if not updated
+//       };
+
+//       await ParentModel.findByIdAndUpdate(parentId, updateParentFields, { new: true });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Student and Parent details updated successfully",
+//       student: updatedStudent
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: "Error updating student and parent details",
+//       error: error.message,
+//     });
+//   }
+// };
 exports.editStudentParent = async (req, res) => {
   try {
     const studentId = req.params.studentId;
@@ -3431,10 +3581,10 @@ exports.editStudentParent = async (req, res) => {
       parentImageResult = await cloudinary.uploader.upload(parentFileUri.content);
     }
 
-    // Updating student details including rollNo and studentAdmissionNumber
+    // Update student details, allowing manual changes to studentAdmissionNumber and rollNo
     const updateStudentFields = {
       fullName: studentFullName || student.fullName,
-      password: studentHashPassword || student.password, // update if password is provided
+      password: studentHashPassword || student.password, // Update if password is provided
       dateOfBirth: studentDateOfBirth || student.dateOfBirth,
       gender: studentGender || student.gender,
       joiningDate: studentJoiningDate || student.joiningDate,
@@ -3444,8 +3594,8 @@ exports.editStudentParent = async (req, res) => {
       section: studentSection || student.section,
       country: studentCountry || student.country,
       subject: studentSubject || student.subject,
-      rollNo: rollNo || student.rollNo, // Update rollNo
-      studentAdmissionNumber: studentAdmissionNumber || student.studentAdmissionNumber, // Update studentAdmissionNumber
+      rollNo: rollNo || student.rollNo, // Manual rollNo update
+      admissionNumber: studentAdmissionNumber || student.admissionNumber, // Manual admissionNumber update
       religion: religion || student.religion,
       caste: caste || student.caste,
       nationality: nationality || student.nationality,
@@ -3455,7 +3605,7 @@ exports.editStudentParent = async (req, res) => {
       image: studentImageResult ? {
         public_id: studentImageResult.public_id,
         url: studentImageResult.secure_url,
-      } : student.image // retain previous image if not updated
+      } : student.image // Retain previous image if not updated
     };
 
     const updatedStudent = await NewStudentModel.findByIdAndUpdate(studentId, updateStudentFields, { new: true });
@@ -3481,11 +3631,11 @@ exports.editStudentParent = async (req, res) => {
         contact: parentContact || parent.contact,
         income: parentIncome || parent.income,
         qualification: parentQualification || parent.qualification,
-        password: parentHashPassword || parent.password, // update if password is provided
+        password: parentHashPassword || parent.password, // Update if password is provided
         image: parentImageResult ? {
           public_id: parentImageResult.public_id,
           url: parentImageResult.secure_url,
-        } : parent.image // retain previous image if not updated
+        } : parent.image // Retain previous image if not updated
       };
 
       await ParentModel.findByIdAndUpdate(parentId, updateParentFields, { new: true });
