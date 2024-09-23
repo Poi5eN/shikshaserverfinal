@@ -3258,20 +3258,120 @@ exports.createBulkStudentParent = async (req, res) => {
 
 
 // STUDENT PARENT EDIT AND GET API BELOW {NEW}
+// exports.editStudentParent = async (req, res) => {
+//   try {
+//     const studentId = req.params.studentId;
+//     const {
+//       studentFullName,
+//       studentDateOfBirth,
+//       studentGender,
+//       studentJoiningDate,
+//       studentAddress,
+//       studentContact,
+//       studentCountry,
+//       studentSubject,
+//       fatherName,
+//       motherName,
+//       parentContact,
+//       parentIncome,
+//       parentQualification,
+//       religion,
+//       caste,
+//       nationality,
+//       pincode,
+//       state,
+//       city,
+//       parentId
+//     } = req.body;
+
+//     if (!studentId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Student ID is required",
+//       });
+//     }
+
+//     const student = await NewStudentModel.findById(studentId);
+//     if (!student) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Student not found",
+//       });
+//     }
+
+//     // Ensure fields that cannot be edited are not modified
+//     const updateFields = {
+//       fullName: studentFullName || student.fullName,
+//       dateOfBirth: studentDateOfBirth || student.dateOfBirth,
+//       gender: studentGender || student.gender,
+//       joiningDate: studentJoiningDate || student.joiningDate,
+//       address: studentAddress || student.address,
+//       contact: studentContact || student.contact,
+//       country: studentCountry || student.country,
+//       subject: studentSubject || student.subject,
+//       fatherName: fatherName || student.fatherName,
+//       motherName: motherName || student.motherName,
+//       religion: religion || student.religion,
+//       caste: caste || student.caste,
+//       nationality: nationality || student.nationality,
+//       pincode: pincode || student.pincode,
+//       state: state || student.state,
+//       city: city || student.city
+//     };
+
+//     const updatedStudent = await NewStudentModel.findByIdAndUpdate(studentId, updateFields, { new: true });
+
+//     if (parentId) {
+//       const parent = await ParentModel.findById(parentId);
+//       if (!parent) {
+//         return res.status(404).json({
+//           success: false,
+//           message: "Parent not found",
+//         });
+//       }
+
+//       const parentUpdateFields = {
+//         fullName: fatherName || parent.fullName,
+//         motherName: motherName || parent.motherName,
+//         contact: parentContact || parent.contact,
+//         income: parentIncome || parent.income,
+//         qualification: parentQualification || parent.qualification,
+//       };
+
+//       await ParentModel.findByIdAndUpdate(parentId, parentUpdateFields, { new: true });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Student and Parent details updated successfully",
+//       student: updatedStudent
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: "Error updating student and parent details",
+//       error: error.message,
+//     });
+//   }
+// };
 exports.editStudentParent = async (req, res) => {
   try {
     const studentId = req.params.studentId;
     const {
       studentFullName,
+      studentPassword,
       studentDateOfBirth,
       studentGender,
       studentJoiningDate,
       studentAddress,
       studentContact,
+      studentClass,
+      studentSection,
       studentCountry,
       studentSubject,
       fatherName,
       motherName,
+      parentPassword,
       parentContact,
       parentIncome,
       parentQualification,
@@ -3299,27 +3399,62 @@ exports.editStudentParent = async (req, res) => {
       });
     }
 
-    // Ensure fields that cannot be edited are not modified
-    const updateFields = {
+    // Ensure emails and admission numbers are not editable
+    if (req.body.studentEmail || req.body.parentEmail || req.body.parentAdmissionNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot edit student or parent email, or parent admission number",
+      });
+    }
+
+    // Hash new student password if provided
+    let studentHashPassword;
+    if (studentPassword) {
+      studentHashPassword = await hashPassword(studentPassword);
+    }
+
+    // Image upload handling for both student and parent
+    const studentFile = req.files && req.files[0] ? req.files[0] : null;
+    const parentFile = req.files && req.files[1] ? req.files[1] : null;
+
+    let studentImageResult = null;
+    if (studentFile) {
+      const studentFileUri = getDataUri(studentFile);
+      studentImageResult = await cloudinary.uploader.upload(studentFileUri.content);
+    }
+
+    let parentImageResult = null;
+    if (parentFile) {
+      const parentFileUri = getDataUri(parentFile);
+      parentImageResult = await cloudinary.uploader.upload(parentFileUri.content);
+    }
+
+    // Updating student details except uneditable fields
+    const updateStudentFields = {
       fullName: studentFullName || student.fullName,
+      password: studentHashPassword || student.password, // update if password is provided
       dateOfBirth: studentDateOfBirth || student.dateOfBirth,
       gender: studentGender || student.gender,
       joiningDate: studentJoiningDate || student.joiningDate,
       address: studentAddress || student.address,
       contact: studentContact || student.contact,
+      class: studentClass || student.class,
+      section: studentSection || student.section,
       country: studentCountry || student.country,
       subject: studentSubject || student.subject,
-      fatherName: fatherName || student.fatherName,
-      motherName: motherName || student.motherName,
       religion: religion || student.religion,
       caste: caste || student.caste,
       nationality: nationality || student.nationality,
       pincode: pincode || student.pincode,
       state: state || student.state,
-      city: city || student.city
+      city: city || student.city,
+      image: studentImageResult ? {
+        public_id: studentImageResult.public_id,
+        url: studentImageResult.secure_url,
+      } : student.image // retain previous image if not updated
     };
 
-    const updatedStudent = await NewStudentModel.findByIdAndUpdate(studentId, updateFields, { new: true });
+    const updatedStudent = await NewStudentModel.findByIdAndUpdate(studentId, updateStudentFields, { new: true });
 
     if (parentId) {
       const parent = await ParentModel.findById(parentId);
@@ -3330,15 +3465,26 @@ exports.editStudentParent = async (req, res) => {
         });
       }
 
-      const parentUpdateFields = {
+      // Hash new parent password if provided
+      let parentHashPassword;
+      if (parentPassword) {
+        parentHashPassword = await hashPassword(parentPassword);
+      }
+
+      const updateParentFields = {
         fullName: fatherName || parent.fullName,
         motherName: motherName || parent.motherName,
         contact: parentContact || parent.contact,
         income: parentIncome || parent.income,
         qualification: parentQualification || parent.qualification,
+        password: parentHashPassword || parent.password, // update if password is provided
+        image: parentImageResult ? {
+          public_id: parentImageResult.public_id,
+          url: parentImageResult.secure_url,
+        } : parent.image // retain previous image if not updated
       };
 
-      await ParentModel.findByIdAndUpdate(parentId, parentUpdateFields, { new: true });
+      await ParentModel.findByIdAndUpdate(parentId, updateParentFields, { new: true });
     }
 
     res.status(200).json({
