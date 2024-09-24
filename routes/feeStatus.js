@@ -1,11 +1,12 @@
 const express = require("express");
-const { createOrUpdateFeePayment , getFeeStatus, feeIncomeMonths, getFeeHistory, editFeeStatus, deleteFeeStatus, getAllStudentsFeeStatus, getFeeStatusByMonth, getStudentFeeHistory, getFeeHistoryAndDues} = require("../controllers/feeStatusController");
+const { createOrUpdateFeePayment , getFeeStatus, feeIncomeMonths, getFeeHistory, editFeeStatus, deleteFeeStatus, getAllStudentsFeeStatus, getFeeStatusByMonth, getStudentFeeHistory, getFeeHistoryAndDues, createPayment} = require("../controllers/feeStatusController");
 const { manageDuesPayment } = require("../controllers/manageDuesPayment");
 const verifyToken = require("../middleware/auth");
 
 const router = express.Router();
 
 router.post('/createFeeStatus', verifyToken, createOrUpdateFeePayment);
+router.post('/createPayment', verifyToken, createPayment);
 router.get('/getFeeStatus', verifyToken, getFeeStatus);
 router.get('/feeIncomeMonths', verifyToken, feeIncomeMonths);
 router.get('/feeHistory', verifyToken, getFeeHistory);

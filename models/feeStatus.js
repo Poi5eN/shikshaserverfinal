@@ -1,148 +1,3 @@
-// // const mongoose = require('mongoose');
-
-// // const feeStatus = new mongoose.Schema({
-// //     schoolId: {
-// //         type: String,
-// //         required: true
-// //     },
-// //     studentId: {
-// //         type: String,
-// //         required: true
-// //     },
-
-// //     year: {
-// //         type: String,
-// //         required: true
-// //     },
-// //     dues:{
-// //         type: Number
-// //     },
-// //     // feeStatus: {
-// //     //     type: String,
-// //     //     required: true
-// //     // },
-// //     feeHistory: [
-// //         {
-// //             date: {
-// //                 type: Date,
-// //                 required: true
-// //             },
-// //             status: {
-// //                 type: String,
-// //                 required: true
-// //             },
-// //             month: {
-// //                 type: String,
-// //                 required: true
-// //             },
-// //             paidAmount: {
-// //                 type: String,
-// //                 required: true
-// //             }
-// //         }
-// //     ]
-// // });
-
-// // module.exports = mongoose.model("feeStatus", feeStatus);
-
-// const mongoose = require('mongoose');
-
-// const feeStatus = new mongoose.Schema({
-//     schoolId: {
-//         type: String,
-//         required: true
-//     },
-//     admissionNumber: {
-//         type: String,
-//         required: true
-//     },
-//     year: {
-//         type: String,
-//         required: true
-//     },
-//     dues: {
-//         type: Number
-//     },
-//     feeHistory: [
-//         {
-//             date: {
-//                 type: Date,
-//                 required: true
-//             },
-//             status: {
-//                 type: String,
-//                 required: true
-//             },
-//             month: {
-//                 type: String,
-//                 required: true
-//             },
-//             paidAmount: {
-//                 type: String,
-//                 required: true
-//             },
-//             feeReceiptNumber: {
-//                 type: String,
-//                 required: true
-//             },
-//             paymentMode: {  // Added paymentMode field
-//                 type: String,
-//                 required: true
-//             }
-//         }
-//     ]
-// });
-
-// module.exports = mongoose.model("feeStatus", feeStatus);
-
-
-// const mongoose = require('mongoose');
-
-// const feeStatus = new mongoose.Schema({
-//     schoolId: {
-//         type: String,
-//         required: true
-//     },
-//     admissionNumber: {
-//         type: String,
-//         required: true
-//     },
-
-//     year: {
-//         type: String,
-//         required: true
-//     },
-//     dues:{
-//         type: Number
-//     },
-//     // feeStatus: {
-//     //     type: String,
-//     //     required: true
-//     // },
-//     feeHistory: [
-//         {
-//             date: {
-//                 type: Date,
-//                 required: true
-//             },
-//             status: {
-//                 type: String,
-//                 required: true
-//             },
-//             month: {
-//                 type: String,
-//                 required: true
-//             },
-//             paidAmount: {
-//                 type: String,
-//                 required: true
-//             }
-//         }
-//     ]
-// });
-
-// module.exports = mongoose.model("feeStatus", feeStatus);
-
 const mongoose = require('mongoose');
 
 // Schema for regular fee history within fee history
@@ -212,22 +67,26 @@ const feeHistorySchema = new mongoose.Schema({
         required: true
     },
     transactionId: {
-        type: String,
+        type: String
     },
     totalFeeAmount: {
         type: Number,
+        required: true
     },
     previousDues: {
         type: Number,
+        default: 0
     },
     remark: {
         type: String
     },
     totalAmountPaid: {
         type: Number,
+        default: 0
     },
     totalDues: {
         type: Number,
+        default: 0
     },
     concessionFee: {
         type: Number,
@@ -243,7 +102,7 @@ const feeHistorySchema = new mongoose.Schema({
     }
 }, { toJSON: { getters: true } });
 
-// Schema for regular dues within monthly dues
+// Schema for monthly regular dues
 const monthlyRegularDuesSchema = new mongoose.Schema({
     month: {
         type: String,
@@ -251,7 +110,7 @@ const monthlyRegularDuesSchema = new mongoose.Schema({
     },
     paidAmount: {
         type: Number,
-        // required: true
+        default: 0
     },
     dueAmount: {
         type: Number,
@@ -263,19 +122,19 @@ const monthlyRegularDuesSchema = new mongoose.Schema({
     }
 });
 
-// Schema for additional dues within monthly dues
+// Schema for monthly additional dues
 const monthlyAdditionalDuesSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true
     },
-    paidAmount: {
-        type: Number,
-        // required: true
-    },
-    month:{
+    month: {
         type: String,
         required: true
+    },
+    paidAmount: {
+        type: Number,
+        default: 0
     },
     dueAmount: {
         type: Number,

@@ -228,6 +228,99 @@ exports.createOrUpdateFeePayment = async (req, res) => {
     }
 };
 
+
+// NEW PAYMENT TESTING
+exports.createPayment = async (req, res) => {
+    try {
+        const { admissionNumber, className, feeHistory } = req.body;
+        const schoolId = req.user.schoolId;
+        const year = new Date().getFullYear();
+
+        const fees = await getFeesForClass(schoolId, className);
+
+        const regularFeeAmount = fees.find(fee => !fee.additional).amount || 0;
+        const additionalFees = fees.filter(fee => fee.additional);
+
+        let totalPaidAmount = 0;
+        let totalDues = 0;
+
+        const existingFeePayment = await FeeStatus.findOne({ schoolId, admissionNumber, year });
+        
+        const regularFees = feeHistory.regularFees.map(fee => ({
+            month: fee.month,
+            dueAmount: regularFeeAmount,
+            paidAmount: fee.paidAmount || 0,
+            status: (fee.paidAmount || 0) >= regularFeeAmount ? 'Paid' : 'Partial Payment'
+        }));
+
+        const additionalFeesData = feeHistory.additionalFees.map(fee => ({
+            name: fee.name,
+            month: fee.month,
+            dueAmount: (additionalFees.find(addFee => addFee.name === fee.name)?.amount || 0),
+            paidAmount: fee.paidAmount || 0,
+            status: (fee.paidAmount || 0) >= (additionalFees.find(addFee => addFee.name === fee.name)?.amount || 0) ? 'Paid' : 'Partial Payment'
+        }));
+
+        const totalFeesAmount = regularFeeAmount * feeHistory.regularFees.length
+            + additionalFeesData.reduce((acc, fee) => acc + fee.dueAmount, 0);
+
+        const newFeeHistory = {
+            date: new Date(),
+            status: totalDues <= 0 ? 'Paid' : 'Partial Payment',
+            totalFeeAmount: totalFeesAmount,
+            previousDues: feeHistory.previousDues || 0,
+            paidAmount: feeHistory.paidAmount || 0,
+            regularFees,
+            additionalFees: additionalFeesData
+        };
+
+        if (existingFeePayment) {
+            existingFeePayment.feeHistory.push(newFeeHistory);
+
+            existingFeePayment.monthlyDues.regularDues.forEach(due => {
+                const matchingFee = regularFees.find(fee => fee.month === due.month);
+                if (matchingFee) {
+                    due.dueAmount = matchingFee.dueAmount;
+                    due.paidAmount = (due.paidAmount || 0) + matchingFee.paidAmount;
+                    due.status = matchingFee.status;
+                }
+            });
+
+            additionalFeesData.forEach(fee => {
+                const matchingFee = existingFeePayment.monthlyDues.additionalDues.find(addFee => addFee.name === fee.name && addFee.month === fee.month);
+                if (matchingFee) {
+                    matchingFee.dueAmount = fee.dueAmount;
+                    matchingFee.paidAmount = (matchingFee.paidAmount || 0) + fee.paidAmount;
+                    matchingFee.status = fee.status;
+                }
+            });
+
+            existingFeePayment.dues = totalDues;
+            await existingFeePayment.save();
+            res.status(200).json({ success: true, message: 'Fee payment updated successfully', data: existingFeePayment });
+        } else {
+            const newFeePayment = new FeeStatus({
+                schoolId,
+                admissionNumber,
+                year,
+                dues: totalDues,
+                feeHistory: [newFeeHistory],
+                monthlyDues: {
+                    regularDues: regularFees,
+                    additionalDues: additionalFeesData
+                }
+            });
+            await newFeePayment.save();
+            res.status(201).json({ success: true, message: 'Fee payment created successfully', data: newFeePayment });
+        }
+    } catch (error) {
+        res.status(400).json({ success: false, message: 'Error processing fee payment', error: error.message });
+    }
+};
+
+
+
+
 // Controller to get fee status
 exports.getFeeStatus = async (req, res) => {
     try {
@@ -393,28 +486,40 @@ exports.feeIncomeMonths = async (req, res) => {
             'December': 11
         };
 
+        // Debugging: Log the feesData to inspect the structure
+        console.log('Fees Data:', feesData);
+
         for (const feeStatus of feesData) {
             for (const feeHistoryEntry of feeStatus.feeHistory) {
+                // Debugging: Log each feeHistoryEntry
+                console.log('Fee History Entry:', feeHistoryEntry);
+
                 // Convert month name to an index (0-11)
                 const monthIndex = monthToIndex[feeHistoryEntry.month];
                 
-                arr[monthIndex] += Number(feeHistoryEntry.totalAmountPaid); // Accumulate totalAmountPaid
+                // Debugging: Check if monthIndex is valid
+                if (monthIndex !== undefined) {
+                    arr[monthIndex] += Number(feeHistoryEntry.totalAmountPaid) || 0; // Accumulate totalAmountPaid
+                } else {
+                    console.warn(`Invalid month name: ${feeHistoryEntry.month}`);
+                }
             }
         }
 
         res.status(200).json({
             success: true,
-            message: "Fees Data Successfully Get",
+            message: "Fees Data Successfully Retrieved",
             data: arr
         });
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: "Fee Income According to month is not get due to error",
+            message: "Error retrieving fee income data by month",
             error: error.message
         });
     }
 };
+
 
 
 
