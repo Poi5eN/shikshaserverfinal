@@ -1,5 +1,5 @@
 const express = require("express");
-const { createOrUpdateFeePayment , getFeeStatus, feeIncomeMonths, getFeeHistory, editFeeStatus, deleteFeeStatus, getAllStudentsFeeStatus} = require("../controllers/feeStatusController");
+const { createOrUpdateFeePayment , getFeeStatus, feeIncomeMonths, getFeeHistory, editFeeStatus, deleteFeeStatus, getAllStudentsFeeStatus, getFeeStatusByMonth, getStudentFeeHistory, getFeeHistoryAndDues} = require("../controllers/feeStatusController");
 const { manageDuesPayment } = require("../controllers/manageDuesPayment");
 const verifyToken = require("../middleware/auth");
 
@@ -10,6 +10,9 @@ router.get('/getFeeStatus', verifyToken, getFeeStatus);
 router.get('/feeIncomeMonths', verifyToken, feeIncomeMonths);
 router.get('/feeHistory', verifyToken, getFeeHistory);
 router.get('/getAllStudentsFeeStatus', verifyToken, getAllStudentsFeeStatus);
+router.get('/getFeeStatusByMonth', verifyToken, getFeeStatusByMonth);
+router.get('/getStudentFeeHistory/:admissionNumber', verifyToken, getStudentFeeHistory);
+router.get('/getFeeHistoryAndDues/:admissionNumber', verifyToken, getFeeHistoryAndDues);
 router.put('/editFeeStatus/:receiptNumber', verifyToken, editFeeStatus);
 router.delete('/deleteFeeStatus/:receiptNumber', verifyToken, deleteFeeStatus);
 // router.delete('/deleteExam/:examId', verifyToken, deleteExam);

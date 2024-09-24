@@ -277,6 +277,99 @@ exports.getFeeStatus = async (req, res) => {
     }
 };
 
+exports.getFeeStatusByMonth = async (req, res) => {
+    try {
+        const { admissionNumber, month } = req.query;
+        const schoolId = req.user.schoolId;
+
+        let filter = {
+            ...(admissionNumber ? { admissionNumber } : {}),
+            schoolId
+        };
+
+        // Fetch fee status data for the filtered admissionNumber or school
+        const feesData = await FeeStatus.find(filter).lean();
+
+        if (feesData.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No fee status found for the provided filter",
+                data: []
+            });
+        }
+
+        // Fetch student details for each fee status
+        const studentDetailsPromises = feesData.map(async feeStatus => {
+            const student = await NewStudentModel.findOne({
+                schoolId,
+                admissionNumber: feeStatus.admissionNumber
+            }).lean();
+
+            // Extract fee details for the specified month
+            const monthlyRegularFees = feeStatus.monthlyDues.regularDues.filter(fee => fee.month === month);
+            const monthlyAdditionalFees = feeStatus.monthlyDues.additionalDues.filter(fee => fee.month === month);
+
+            // Calculate the total dues and total paid amount for the month
+            let totalRegularDues = 0;
+            let totalRegularPaid = 0;
+            let totalAdditionalDues = 0;
+            let totalAdditionalPaid = 0;
+
+            monthlyRegularFees.forEach(fee => {
+                totalRegularDues += fee.dueAmount;
+                totalRegularPaid += fee.paidAmount;
+            });
+
+            monthlyAdditionalFees.forEach(fee => {
+                totalAdditionalDues += fee.dueAmount;
+                totalAdditionalPaid += fee.paidAmount;
+            });
+
+            // Calculate overall fee status for the month (paid, partial, or unpaid)
+            let status = "Paid";
+            if (totalRegularDues > 0 || totalAdditionalDues > 0) {
+                if (totalRegularPaid > 0 || totalAdditionalPaid > 0) {
+                    status = "Partial Payment";
+                } else {
+                    status = "Unpaid";
+                }
+            }
+
+            // Returning the fee data grouped by month with overall status
+            return {
+                ...feeStatus,
+                student,
+                month,
+                monthlyFees: {
+                    regularFees: monthlyRegularFees,
+                    additionalFees: monthlyAdditionalFees
+                },
+                totalRegularDues,
+                totalRegularPaid,
+                totalAdditionalDues,
+                totalAdditionalPaid,
+                totalDues: totalRegularDues + totalAdditionalDues,
+                totalPaid: totalRegularPaid + totalAdditionalPaid,
+                status // Paid/Partial/Unpaid for the specific month
+            };
+        });
+
+        const detailedFeeStatus = await Promise.all(studentDetailsPromises);
+
+        res.status(200).json({
+            success: true,
+            message: "Monthly Fee Status Data Retrieved Successfully",
+            data: detailedFeeStatus
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Failed to retrieve monthly fee status",
+            error: error.message
+        });
+    }
+};
+
 
 exports.feeIncomeMonths = async (req, res) => {
     try {
@@ -451,8 +544,6 @@ exports.deleteFeeStatus = async (req, res) => {
 
 
 // // ALL STUDENTS TABLE CREATION FOR FEE MANAGEMENT
-// const NewStudentModel = require("../models/newStudentModel");
-// const FeeStatus = require("../models/feeStatus");
 
 // Controller to get all students with their fee status
 exports.getAllStudentsFeeStatus = async (req, res) => {
@@ -508,6 +599,128 @@ exports.getAllStudentsFeeStatus = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Failed to retrieve student fee status data",
+            error: error.message
+        });
+    }
+};
+
+
+
+exports.getStudentFeeHistory = async (req, res) => {
+    try {
+        const { admissionNumber } = req.query; // Get admission number from query params
+        const schoolId = req.user.schoolId; // Get school ID from authenticated user
+
+        if (!admissionNumber) {
+            return res.status(400).json({
+                success: false,
+                message: "Admission number is required",
+            });
+        }
+
+        // Find the student's fee status by admission number and school ID
+        const feeStatus = await FeeStatus.findOne({
+            admissionNumber,
+            schoolId
+        }).lean();
+
+        if (!feeStatus) {
+            return res.status(404).json({
+                success: false,
+                message: "No fee status found for this student",
+            });
+        }
+
+        // Get student details
+        const student = await NewStudentModel.findOne({
+            admissionNumber,
+            schoolId
+        }).lean();
+
+        if (!student) {
+            return res.status(404).json({
+                success: false,
+                message: "No student found with the provided admission number",
+            });
+        }
+
+        // Return fee history and dues
+        res.status(200).json({
+            success: true,
+            message: "Student fee history and dues retrieved successfully",
+            data: {
+                studentDetails: student,
+                feeHistory: feeStatus.feeHistory, // Array of fee history entries
+                monthlyDues: feeStatus.monthlyDues, // Regular and additional dues
+                totalDues: feeStatus.dues, // Total outstanding dues
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error retrieving fee history",
+            error: error.message
+        });
+    }
+};
+
+
+
+// Controller to get fee history and dues for a specific student using admission number from URL
+exports.getFeeHistoryAndDues = async (req, res) => {
+    try {
+        const { admissionNumber } = req.params;
+
+        // Validate admission number
+        if (!admissionNumber) {
+            return res.status(400).json({
+                success: false,
+                message: "Admission number is required"
+            });
+        }
+
+        // Fetch fee status data for the student
+        const feeStatusData = await FeeStatus.findOne({
+            admissionNumber: admissionNumber,
+            schoolId: req.user.schoolId
+        }).lean();
+
+        if (!feeStatusData) {
+            return res.status(404).json({
+                success: false,
+                message: "No fee status found for the provided admission number"
+            });
+        }
+
+        // Fetch student details
+        const student = await NewStudentModel.findOne({
+            schoolId: req.user.schoolId,
+            admissionNumber: admissionNumber
+        }).lean();
+
+        if (!student) {
+            return res.status(404).json({
+                success: false,
+                message: "No student found with the provided admission number"
+            });
+        }
+
+        // Combine fee status and student details
+        const responseData = {
+            student,
+            feeStatus: feeStatusData
+        };
+
+        res.status(200).json({
+            success: true,
+            message: "Fee history and dues retrieved successfully",
+            data: responseData
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Failed to retrieve fee history and dues",
             error: error.message
         });
     }
