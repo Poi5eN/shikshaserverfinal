@@ -4581,6 +4581,77 @@ exports.addSibling = async (req, res) => {
 // const ParentModel = require('../models/ParentModel');
 // const NewStudentModel = require('../models/NewStudentModel');
 
+// exports.getParentWithChildren = async (req, res) => {
+//   try {
+//     const parentAdmissionNumber = req.params.parentAdmissionNumber;
+
+//     if (!parentAdmissionNumber) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Parent admission number is required",
+//       });
+//     }
+
+//     // Find the parent and populate student details
+//     const parent = await ParentModel.findOne({ admissionNumber: parentAdmissionNumber })
+//       .populate('studentIds'); // Ensure that studentIds field is populated with student details
+
+//     if (!parent) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Parent not found",
+//       });
+//     }
+
+//     // Format the response
+//     res.status(200).json({
+//       success: true,
+//       parent: {
+//         schoolId: parent.schoolId,
+//         studentIds: parent.studentIds.map(student => student._id.toString()), // Return student IDs
+//         studentName: parent.studentName,
+//         fullName: parent.fullName,
+//         motherName: parent.motherName,
+//         email: parent.email,
+//         contact: parent.contact,
+//         admissionNumber: parent.admissionNumber,
+//         income: parent.income,
+//         qualification: parent.qualification,
+//         image: parent.image,
+//         status: parent.status,
+//         role: parent.role,
+//         createdAt: parent.createdAt
+//       },
+//       children: parent.studentIds.map(student => ({
+//         schoolId: student.schoolId,
+//         fullName: student.fullName,
+//         email: student.email,
+//         dateOfBirth: student.dateOfBirth,
+//         rollNo: student.rollNo,
+//         parentId: student.parentId,
+//         status: student.status,
+//         gender: student.gender,
+//         joiningDate: student.joiningDate,
+//         address: student.address,
+//         contact: student.contact,
+//         class: student.class,
+//         section: student.section,
+//         country: student.country,
+//         subject: student.subject,
+//         admissionNumber: student.admissionNumber,
+//         image: student.image,
+//         createdAt: student.createdAt
+//       }))
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: "Error retrieving parent with children",
+//       error: error.message,
+//     });
+//   }
+// };
+
 exports.getParentWithChildren = async (req, res) => {
   try {
     const parentAdmissionNumber = req.params.parentAdmissionNumber;
@@ -4603,12 +4674,42 @@ exports.getParentWithChildren = async (req, res) => {
       });
     }
 
+    // Get dues for each child based on their admission number
+    const childrenWithDues = await Promise.all(
+      parent.studentIds.map(async (student) => {
+        const feeStatus = await FeeStatus.findOne({ admissionNumber: student.admissionNumber });
+        const totalDues = feeStatus ? feeStatus.dues : 0; // If no fee record, dues are 0 by default
+
+        return {
+          schoolId: student.schoolId,
+          fullName: student.fullName,
+          email: student.email,
+          dateOfBirth: student.dateOfBirth,
+          rollNo: student.rollNo,
+          parentId: student.parentId,
+          status: student.status,
+          gender: student.gender,
+          joiningDate: student.joiningDate,
+          address: student.address,
+          contact: student.contact,
+          class: student.class,
+          section: student.section,
+          country: student.country,
+          subject: student.subject,
+          admissionNumber: student.admissionNumber,
+          image: student.image,
+          createdAt: student.createdAt,
+          dues: totalDues, // Add the dues for the student
+        };
+      })
+    );
+
     // Format the response
     res.status(200).json({
       success: true,
       parent: {
         schoolId: parent.schoolId,
-        studentIds: parent.studentIds.map(student => student._id.toString()), // Return student IDs
+        studentIds: parent.studentIds.map((student) => student._id.toString()), // Return student IDs
         studentName: parent.studentName,
         fullName: parent.fullName,
         motherName: parent.motherName,
@@ -4620,28 +4721,9 @@ exports.getParentWithChildren = async (req, res) => {
         image: parent.image,
         status: parent.status,
         role: parent.role,
-        createdAt: parent.createdAt
+        createdAt: parent.createdAt,
       },
-      children: parent.studentIds.map(student => ({
-        schoolId: student.schoolId,
-        fullName: student.fullName,
-        email: student.email,
-        dateOfBirth: student.dateOfBirth,
-        rollNo: student.rollNo,
-        parentId: student.parentId,
-        status: student.status,
-        gender: student.gender,
-        joiningDate: student.joiningDate,
-        address: student.address,
-        contact: student.contact,
-        class: student.class,
-        section: student.section,
-        country: student.country,
-        subject: student.subject,
-        admissionNumber: student.admissionNumber,
-        image: student.image,
-        createdAt: student.createdAt
-      }))
+      children: childrenWithDues, // Return children with dues included
     });
   } catch (error) {
     res.status(500).json({
@@ -4651,7 +4733,6 @@ exports.getParentWithChildren = async (req, res) => {
     });
   }
 };
-
 
 
 
