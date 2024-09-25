@@ -264,6 +264,7 @@ exports.createPayment = async (req, res) => {
         const totalFeesAmount = regularFeeAmount * feeHistory.regularFees.length
             + additionalFeesData.reduce((acc, fee) => acc + fee.dueAmount, 0);
 
+        // **Include paymentMode and feeReceiptNumber here**
         const newFeeHistory = {
             date: new Date(),
             status: totalDues <= 0 ? 'Paid' : 'Partial Payment',
@@ -271,7 +272,9 @@ exports.createPayment = async (req, res) => {
             previousDues: feeHistory.previousDues || 0,
             paidAmount: feeHistory.paidAmount || 0,
             regularFees,
-            additionalFees: additionalFeesData
+            additionalFees: additionalFeesData,
+            paymentMode: feeHistory.paymentMode || 'N/A',  // Default value for payment mode
+            feeReceiptNumber: generateUniqueFeeReceiptNumber(),  // Call function to generate receipt number
         };
 
         if (existingFeePayment) {
@@ -317,6 +320,7 @@ exports.createPayment = async (req, res) => {
         res.status(400).json({ success: false, message: 'Error processing fee payment', error: error.message });
     }
 };
+
 
 
 
