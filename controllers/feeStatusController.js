@@ -236,71 +236,142 @@ exports.createPayment = async (req, res) => {
         const schoolId = req.user.schoolId;
         const year = new Date().getFullYear();
 
+        // Fetch fees for the class
         const fees = await getFeesForClass(schoolId, className);
 
-        const regularFeeAmount = fees.find(fee => !fee.additional).amount || 0;
-        const additionalFees = fees.filter(fee => fee.additional);
+        const regularFeeMap = {};
+        const additionalFeeMap = {};
+
+        // Categorize fees into regular and additional
+        fees.forEach(fee => {
+            if (fee.additional) {
+                additionalFeeMap[fee.name] = fee.amount || 0;
+            } else {
+                regularFeeMap[fee.feeType] = fee.amount || 0;
+            }
+        });
 
         let totalPaidAmount = 0;
         let totalDues = 0;
 
-        const existingFeePayment = await FeeStatus.findOne({ schoolId, admissionNumber, year });
-        
-        const regularFees = feeHistory.regularFees.map(fee => ({
-            month: fee.month,
-            dueAmount: regularFeeAmount,
-            paidAmount: fee.paidAmount || 0,
-            status: (fee.paidAmount || 0) >= regularFeeAmount ? 'Paid' : 'Partial Payment'
-        }));
+        // Fetch existing fee payment record
+        const existingFeePayment = await FeeStatus.findOne({
+            schoolId,
+            admissionNumber,
+            year,
+        });
 
-        const additionalFeesData = feeHistory.additionalFees.map(fee => ({
-            name: fee.name,
-            month: fee.month,
-            dueAmount: (additionalFees.find(addFee => addFee.name === fee.name)?.amount || 0),
-            paidAmount: fee.paidAmount || 0,
-            status: (fee.paidAmount || 0) >= (additionalFees.find(addFee => addFee.name === fee.name)?.amount || 0) ? 'Paid' : 'Partial Payment'
-        }));
+        // Initialize records if not existing
+        const existingRegularFees = existingFeePayment ? existingFeePayment.monthlyDues.regularDues : [];
+        const existingAdditionalFees = existingFeePayment ? existingFeePayment.monthlyDues.additionalDues : [];
 
-        const totalFeesAmount = regularFeeAmount * feeHistory.regularFees.length
-            + additionalFeesData.reduce((acc, fee) => acc + fee.dueAmount, 0);
+        // Function to handle fee calculation and validation
+        const calculateFees = (entries, feeMap, isRegular) => {
+            return entries.map(entry => {
+                const feeAmount = feeMap[isRegular ? "Monthly" : entry.name] || 0;
+                const previousPaidAmount = isRegular
+                    ? existingRegularFees.find(fee => fee.month === entry.month)?.paidAmount || 0
+                    : existingAdditionalFees.find(fee => fee.name === entry.name && fee.month === entry.month)?.paidAmount || 0;
+                const paidAmount = entry.paidAmount || 0;
+                const totalAmountPaid = previousPaidAmount + paidAmount;
 
-        // **Include paymentMode and feeReceiptNumber here**
+                // Check for overpayment
+                if (totalAmountPaid > feeAmount) {
+                    throw new Error(`Payment for ${isRegular ? 'regular' : 'additional'} fee in ${entry.month || 'N/A'} exceeds the remaining dues.`);
+                }
+
+                const dueAmount = feeAmount - totalAmountPaid;
+                const status = dueAmount <= 0 ? "Paid" : "Partial Payment";
+
+                totalPaidAmount += paidAmount;
+                totalDues += dueAmount > 0 ? dueAmount : 0;
+
+                return {
+                    ...entry,
+                    dueAmount: dueAmount > 0 ? dueAmount : 0,
+                    status
+                };
+            });
+        };
+
+        // Calculate dues for regular fees
+        const regularFees = calculateFees(feeHistory.regularFees, regularFeeMap, true);
+
+        // Calculate dues for additional fees
+        const additionalFees = calculateFees(feeHistory.additionalFees, additionalFeeMap, false);
+
+        // Format the date from the frontend or use the current date
+        const date = new Date(feeHistory.date || new Date());
+        const formattedDate = date.toLocaleDateString("en-US", {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric'
+        });
+
         const newFeeHistory = {
-            date: new Date(),
-            status: totalDues <= 0 ? 'Paid' : 'Partial Payment',
-            totalFeeAmount: totalFeesAmount,
-            previousDues: feeHistory.previousDues || 0,
-            paidAmount: feeHistory.paidAmount || 0,
+            date: formattedDate, // Use the formatted date
+            status: totalDues <= 0 ? "Paid" : "Partial Payment",
             regularFees,
-            additionalFees: additionalFeesData,
-            paymentMode: feeHistory.paymentMode || 'N/A',  // Default value for payment mode
-            feeReceiptNumber: generateUniqueFeeReceiptNumber(),  // Call function to generate receipt number
+            additionalFees,
+            feeReceiptNumber: generateUniqueFeeReceiptNumber(),
+            paymentMode: feeHistory.paymentMode || "N/A",
+            transactionId: feeHistory.transactionId || "N/A",
+            totalFeeAmount: feeHistory.totalFeeAmount || 0,
+            previousDues: feeHistory.previousDues || 0,
+            remark: feeHistory.remark || "",
+            concessionFee: feeHistory.concessionFee || 0,
+            paidAfterConcession: feeHistory.paidAfterConcession || 0,
+            newPaidAmount: feeHistory.newPaidAmount || 0,
+            totalAmountPaid: totalPaidAmount,
+            totalDues
         };
 
         if (existingFeePayment) {
             existingFeePayment.feeHistory.push(newFeeHistory);
 
-            existingFeePayment.monthlyDues.regularDues.forEach(due => {
-                const matchingFee = regularFees.find(fee => fee.month === due.month);
-                if (matchingFee) {
-                    due.dueAmount = matchingFee.dueAmount;
-                    due.paidAmount = (due.paidAmount || 0) + matchingFee.paidAmount;
-                    due.status = matchingFee.status;
+            // Update monthly dues for regular fees
+            regularFees.forEach(entry => {
+                let regularDue = existingFeePayment.monthlyDues.regularDues.find(due => due.month === entry.month);
+                if (regularDue) {
+                    regularDue.dueAmount = entry.dueAmount;
+                    regularDue.paidAmount = (regularDue.paidAmount || 0) + entry.paidAmount; // Update paid amount
+                    regularDue.status = entry.status;
+                } else {
+                    existingFeePayment.monthlyDues.regularDues.push({
+                        month: entry.month,
+                        dueAmount: entry.dueAmount,
+                        paidAmount: entry.paidAmount, // Set paid amount
+                        status: entry.status
+                    });
                 }
             });
 
-            additionalFeesData.forEach(fee => {
-                const matchingFee = existingFeePayment.monthlyDues.additionalDues.find(addFee => addFee.name === fee.name && addFee.month === fee.month);
-                if (matchingFee) {
-                    matchingFee.dueAmount = fee.dueAmount;
-                    matchingFee.paidAmount = (matchingFee.paidAmount || 0) + fee.paidAmount;
-                    matchingFee.status = fee.status;
+            // Update monthly dues for additional fees
+            additionalFees.forEach(entry => {
+                let additionalDue = existingFeePayment.monthlyDues.additionalDues.find(due => due.name === entry.name && due.month === entry.month);
+                if (additionalDue) {
+                    additionalDue.dueAmount = entry.dueAmount;
+                    additionalDue.paidAmount = (additionalDue.paidAmount || 0) + entry.paidAmount; // Update paid amount
+                    additionalDue.status = entry.status;
+                } else {
+                    existingFeePayment.monthlyDues.additionalDues.push({
+                        name: entry.name,
+                        month: entry.month || "N/A",
+                        dueAmount: entry.dueAmount,
+                        paidAmount: entry.paidAmount, // Set paid amount
+                        status: entry.status
+                    });
                 }
             });
 
             existingFeePayment.dues = totalDues;
-            await existingFeePayment.save();
-            res.status(200).json({ success: true, message: 'Fee payment updated successfully', data: existingFeePayment });
+
+            const updatedFeePayment = await existingFeePayment.save();
+            res.status(201).json({
+                success: true,
+                message: "Fee Status updated successfully",
+                data: updatedFeePayment
+            });
         } else {
             const newFeePayment = new FeeStatus({
                 schoolId,
@@ -309,17 +380,34 @@ exports.createPayment = async (req, res) => {
                 dues: totalDues,
                 feeHistory: [newFeeHistory],
                 monthlyDues: {
-                    regularDues: regularFees,
-                    additionalDues: additionalFeesData
+                    regularDues: regularFees.map(entry => ({
+                        month: entry.month,
+                        dueAmount: entry.dueAmount,
+                        paidAmount: entry.paidAmount, // Set paid amount
+                        status: entry.status
+                    })),
+                    additionalDues: additionalFees.map(entry => ({
+                        name: entry.name,
+                        month: entry.month || "N/A",
+                        dueAmount: entry.dueAmount,
+                        paidAmount: entry.paidAmount, // Set paid amount
+                        status: entry.status
+                    }))
                 }
             });
-            await newFeePayment.save();
-            res.status(201).json({ success: true, message: 'Fee payment created successfully', data: newFeePayment });
+
+            const savedFeePayment = await newFeePayment.save();
+            res.status(201).json({
+                success: true,
+                message: "Fee payment created successfully",
+                data: savedFeePayment
+            });
         }
     } catch (error) {
-        res.status(400).json({ success: false, message: 'Error processing fee payment', error: error.message });
+        res.status(500).json({ success: false, message: error.message });
     }
 };
+
 
 
 
