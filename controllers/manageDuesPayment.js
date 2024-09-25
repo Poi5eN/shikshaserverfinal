@@ -1,6 +1,32 @@
 const FeeStatus = require("../models/feeStatus");
 const FeeManage = require("../models/feeManage");
+const NewStudentModel = require("../models/newStudentModel");
 const FeeStructure = require("../models/feeStructureModel");
+
+// Helper function to generate a unique fee receipt number
+function generateUniqueFeeReceiptNumber() {
+    const characters = 'ABC0123456789';
+    let result = '';
+    for (let i = 0; i < 5; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+}
+
+// Helper function to fetch fees for a class
+async function getFeesForClass(schoolId, className) {
+    try {
+        const fees = await FeeStructure.find({ schoolId, className });
+
+        if (fees.length === 0) {
+            throw new Error(`No fee structure found for class ${className}`);
+        }
+
+        return fees;
+    } catch (error) {
+        throw new Error(`Failed to fetch fees for class ${className}: ${error.message}`);
+    }
+}
 
 // Function to calculate dues for each month
 function calculateMonthlyDues(feeEntries, feeMap) {
