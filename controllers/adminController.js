@@ -2260,34 +2260,22 @@ exports.editStudentParent = async (req, res) => {
       });
     }
 
-    // Ensure parent emails are not editable
-    if (formData.parentEmail || formData.parentAdmissionNumber) {
-      return res.status(400).json({
-        success: false,
-        message: "Cannot edit parent email or parent admission number",
-      });
-    }
-
-    // Hash new student password if provided
-    let studentHashPassword;
-    if (formData.studentPassword) {
-      studentHashPassword = await hashPassword(formData.studentPassword);
-    }
-
     // Image upload handling for both student and parent
-    const studentFile = files && files.studentImage ? files.studentImage[0] : null;
-    const parentFile = files && files.parentImage ? files.parentImage[0] : null;
-
     let studentImageResult = null;
-    if (studentFile) {
+    let parentImageResult = null;
+
+    if (files && files.studentImage) {
+      const studentFile = files.studentImage[0];
       const studentFileUri = getDataUri(studentFile);
       studentImageResult = await cloudinary.uploader.upload(studentFileUri.content);
+      console.log("Student image uploaded:", studentImageResult);
     }
 
-    let parentImageResult = null;
-    if (parentFile) {
+    if (files && files.parentImage) {
+      const parentFile = files.parentImage[0];
       const parentFileUri = getDataUri(parentFile);
       parentImageResult = await cloudinary.uploader.upload(parentFileUri.content);
+      console.log("Parent image uploaded:", parentImageResult);
     }
 
     // Update student details
@@ -2317,7 +2305,11 @@ exports.editStudentParent = async (req, res) => {
       } : student.image
     };
 
-    const updatedStudent = await NewStudentModel.findByIdAndUpdate(studentId, updateStudentFields, { new: true });
+    const updatedStudent = await NewStudentModel.findByIdAndUpdate(
+      studentId, 
+      updateStudentFields, 
+      { new: true, runValidators: true }
+    );
 
     if (formData.parentId) {
       const parent = await ParentModel.findById(formData.parentId);
@@ -2326,12 +2318,6 @@ exports.editStudentParent = async (req, res) => {
           success: false,
           message: "Parent not found",
         });
-      }
-
-      // Hash new parent password if provided
-      let parentHashPassword;
-      if (formData.parentPassword) {
-        parentHashPassword = await hashPassword(formData.parentPassword);
       }
 
       const updateParentFields = {
@@ -2347,7 +2333,11 @@ exports.editStudentParent = async (req, res) => {
         } : parent.image
       };
 
-      await ParentModel.findByIdAndUpdate(formData.parentId, updateParentFields, { new: true });
+      await ParentModel.findByIdAndUpdate(
+        formData.parentId, 
+        updateParentFields, 
+        { new: true, runValidators: true }
+      );
     }
 
     res.status(200).json({
@@ -2356,6 +2346,7 @@ exports.editStudentParent = async (req, res) => {
       student: updatedStudent
     });
   } catch (error) {
+    console.error("Error in editStudentParent:", error);
     res.status(500).json({
       success: false,
       message: "Error updating student and parent details",
