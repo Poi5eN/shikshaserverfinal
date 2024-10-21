@@ -1736,7 +1736,7 @@ exports.createStudentParent = async (req, res) => {
     }
 
     // Only generate a new admission number if one is not provided
-    const studentAdmissionNumberToUse = studentAdmissionNumber ? studentAdmissionNumber : await generateAdmissionNumber(NewStudentModel);
+    const studentAdmissionNumberToUse = studentAdmissionNumber || await generateAdmissionNumber(NewStudentModel);
 
 
     console.log('student data created');
@@ -2236,37 +2236,14 @@ exports.createBulkStudentParent = async (req, res) => {
 };
 
 
+// editStudentParent controller
 exports.editStudentParent = async (req, res) => {
   try {
     const studentId = req.params.studentId;
-    const {
-      studentFullName,
-      studentPassword,
-      studentDateOfBirth,
-      studentGender,
-      studentJoiningDate,
-      studentAddress,
-      studentContact,
-      studentClass,
-      studentSection,
-      studentCountry,
-      studentSubject,
-      fatherName,
-      motherName,
-      parentPassword,
-      parentContact,
-      parentIncome,
-      parentQualification,
-      religion,
-      caste,
-      nationality,
-      pincode,
-      state,
-      city,
-      parentId,
-      rollNo, // Added rollNo here
-      studentAdmissionNumber // Added admission number here
-    } = req.body;
+    
+    // Parse form data
+    const formData = req.body;
+    const files = req.files;
 
     if (!studentId) {
       return res.status(400).json({
@@ -2284,7 +2261,7 @@ exports.editStudentParent = async (req, res) => {
     }
 
     // Ensure parent emails are not editable
-    if (req.body.parentEmail || req.body.parentAdmissionNumber) {
+    if (formData.parentEmail || formData.parentAdmissionNumber) {
       return res.status(400).json({
         success: false,
         message: "Cannot edit parent email or parent admission number",
@@ -2293,13 +2270,13 @@ exports.editStudentParent = async (req, res) => {
 
     // Hash new student password if provided
     let studentHashPassword;
-    if (studentPassword) {
-      studentHashPassword = await hashPassword(studentPassword);
+    if (formData.studentPassword) {
+      studentHashPassword = await hashPassword(formData.studentPassword);
     }
 
     // Image upload handling for both student and parent
-    const studentFile = req.files && req.files[0] ? req.files[0] : null;
-    const parentFile = req.files && req.files[1] ? req.files[1] : null;
+    const studentFile = files && files.studentImage ? files.studentImage[0] : null;
+    const parentFile = files && files.parentImage ? files.parentImage[0] : null;
 
     let studentImageResult = null;
     if (studentFile) {
@@ -2315,36 +2292,35 @@ exports.editStudentParent = async (req, res) => {
 
     // Update student details
     const updateStudentFields = {
-      fullName: studentFullName || student.fullName,
+      fullName: formData.studentFullName || student.fullName,
       password: studentHashPassword || student.password,
-      dateOfBirth: studentDateOfBirth || student.dateOfBirth,
-      gender: studentGender || student.gender,
-      joiningDate: studentJoiningDate || student.joiningDate,
-      address: studentAddress || student.address,
-      contact: studentContact || student.contact,
-      class: studentClass || student.class,
-      section: studentSection || student.section,
-      country: studentCountry || student.country,
-      subject: studentSubject || student.subject,
-      rollNo: rollNo || student.rollNo,
-      admissionNumber: studentAdmissionNumber || student.admissionNumber,
-      religion: religion || student.religion,
-      caste: caste || student.caste,
-      nationality: nationality || student.nationality,
-      pincode: pincode || student.pincode,
-      state: state || student.state,
-      city: city || student.city,
+      dateOfBirth: formData.studentDateOfBirth || student.dateOfBirth,
+      gender: formData.studentGender || student.gender,
+      joiningDate: formData.studentJoiningDate || student.joiningDate,
+      address: formData.studentAddress || student.address,
+      contact: formData.studentContact || student.contact,
+      class: formData.studentClass || student.class,
+      section: formData.studentSection || student.section,
+      country: formData.studentCountry || student.country,
+      subject: formData.studentSubject || student.subject,
+      rollNo: formData.rollNo || student.rollNo,
+      admissionNumber: formData.studentAdmissionNumber || student.admissionNumber,
+      religion: formData.religion || student.religion,
+      caste: formData.caste || student.caste,
+      nationality: formData.nationality || student.nationality,
+      pincode: formData.pincode || student.pincode,
+      state: formData.state || student.state,
+      city: formData.city || student.city,
       image: studentImageResult ? {
         public_id: studentImageResult.public_id,
         url: studentImageResult.secure_url,
-      } : student.image // Retain previous image if not updated
+      } : student.image
     };
 
     const updatedStudent = await NewStudentModel.findByIdAndUpdate(studentId, updateStudentFields, { new: true });
 
-    // Update parent details if parentId is provided
-    if (parentId) {
-      const parent = await ParentModel.findById(parentId);
+    if (formData.parentId) {
+      const parent = await ParentModel.findById(formData.parentId);
       if (!parent) {
         return res.status(404).json({
           success: false,
@@ -2354,24 +2330,24 @@ exports.editStudentParent = async (req, res) => {
 
       // Hash new parent password if provided
       let parentHashPassword;
-      if (parentPassword) {
-        parentHashPassword = await hashPassword(parentPassword);
+      if (formData.parentPassword) {
+        parentHashPassword = await hashPassword(formData.parentPassword);
       }
 
       const updateParentFields = {
-        fullName: fatherName || parent.fullName,
-        motherName: motherName || parent.motherName,
-        contact: parentContact || parent.contact,
-        income: parentIncome || parent.income,
-        qualification: parentQualification || parent.qualification,
+        fullName: formData.fatherName || parent.fullName,
+        motherName: formData.motherName || parent.motherName,
+        contact: formData.parentContact || parent.contact,
+        income: formData.parentIncome || parent.income,
+        qualification: formData.parentQualification || parent.qualification,
         password: parentHashPassword || parent.password,
         image: parentImageResult ? {
           public_id: parentImageResult.public_id,
           url: parentImageResult.secure_url,
-        } : parent.image // Retain previous image if not updated
+        } : parent.image
       };
 
-      await ParentModel.findByIdAndUpdate(parentId, updateParentFields, { new: true });
+      await ParentModel.findByIdAndUpdate(formData.parentId, updateParentFields, { new: true });
     }
 
     res.status(200).json({
